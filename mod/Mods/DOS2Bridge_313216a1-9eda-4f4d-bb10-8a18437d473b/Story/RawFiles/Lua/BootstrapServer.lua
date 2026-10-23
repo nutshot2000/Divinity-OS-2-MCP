@@ -5,6 +5,7 @@ Ext.Require("Server/Util.lua")
 Ext.Require("Server/Handlers.lua")
 Ext.Require("Server/Grid.lua")
 Ext.Require("Server/Combat.lua")
+Ext.Require("Server/Tactics.lua")
 
 local REQUEST = "dos2bridge_request.json"
 local RESPONSE = "dos2bridge_response.json"

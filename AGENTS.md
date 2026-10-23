@@ -64,6 +64,7 @@ character's head), keep the pace up, and prefer the text tools over screenshots.
 | `dos2_cast` | Use a memorised skill on a target GUID or on the ground at x,z |
 | `dos2_end_turn` | End your turn and wait through the enemies' turns |
 | `dos2_wait_turn` | Wait until it is your turn |
+| `dos2_tactics` | Positioning map: squares reachable with this turn's AP, high ground, hazards, enemies, best spots |
 | `dos2_msgbox` | Read a yes/no prompt ("leave the Tutorial Deck?") and press a button by id |
 | `dos2_say` | Narrate: overhead text for the watcher |
 | `dos2_screenshot` | Capture the game window. Expensive: only when the text tools cannot show what you need |
@@ -85,7 +86,9 @@ Role-play the character you were given; read their background from what the game
 empties it. Owned items show "(owned by ...)" and are never taken: that would be stealing.
 
 **Combat.** Turn-based. `dos2_combat` at the start of each of your turns, `dos2_skills` to plan, then `dos2_attack`,
-`dos2_cast` or `dos2_move` (moving costs AP), and `dos2_end_turn` when out of useful AP. Physical damage strips
+`dos2_cast` or `dos2_move` (moving costs AP), and `dos2_end_turn` when out of useful AP. Position every turn:
+`dos2_tactics` shows reachable squares, high ground and hazards; take high ground for ranged and spells, keep a wall
+or ally at your back so you are not flanked, step out of fire and poison, and fight in chokepoints. Physical damage strips
 physical armour, magic strips magic armour; knockdowns and other control effects only land once the matching armour
 is gone. Watch surfaces in `dos2_grid` and allies in area skills.
 

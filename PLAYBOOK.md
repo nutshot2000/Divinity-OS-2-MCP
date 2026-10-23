@@ -29,8 +29,20 @@ Turn-based. `dos2_combat` shows whose turn it is, your AP, and every combatant y
    armour gone before knockdowns land, magic needs magic armour gone.
 2. Act with `dos2_attack`, `dos2_cast` (target GUID or ground x,z) or `dos2_move` (costs AP). Each returns the new
    state once the action lands.
-3. Mind surfaces in `dos2_grid` (fire, poison, oil, water) and your allies before area skills.
+3. Mind surfaces (fire, poison, oil, water) and your allies before area skills.
 4. `dos2_end_turn` when out of useful AP; it waits through the enemies' turns. Narrate the plan with `dos2_say`.
+
+### Positioning
+
+Do not just stand there. `dos2_tactics` shows which squares this turn's AP can walk to, high ground (`^`), hazards
+and enemies, and suggests the best spots. Then `dos2_move` there (it costs AP: metres per AP is in the header).
+
+- **High ground** gives ranged and spell attacks bonus damage and range; take it before shooting or casting.
+- **Do not get flanked**: enemies on opposite sides of you hit harder. Put a wall or an ally at your back.
+- **Step out of hazards** (fire, poison, electrified water) at the start of your turn; lure enemies into them.
+- **Chokepoints**: fight in doorways and corridors so only one or two enemies reach you at a time.
+- **Melee**: close the distance in one move and still keep 2 AP to hit. **Ranged/casters**: keep distance, stay high.
+- **Save AP**: unspent AP partly carries to the next turn; ending early is fine when nothing useful is in reach.
 
 ## Cost
 
