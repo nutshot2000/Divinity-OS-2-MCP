@@ -115,11 +115,13 @@ function Handlers.skills()
   local me = ActiveChar()
   local out = {}
   for id, skill in pairs(me.SkillManager.Skills) do
-    if skill.IsLearned then
+    -- Skills granted by equipment or statuses are activated without being "learned"; the hotbar shows them too.
+    if skill.IsLearned or skill.IsActivated then
       local ok, st = pcall(Ext.Stats.Get, id, nil, false)
       if ok and st then
         out[#out + 1] = {
           id = id, name = translated(st.DisplayName, id), memorised = skill.IsActivated,
+          granted = not skill.IsLearned or nil,
           ap = st.ActionPoints, cooldown_turns = st.Cooldown,
           cooldown_left = math.ceil((skill.ActiveCooldown or 0) / 6),
           range = st.TargetRadius ~= 0 and st.TargetRadius or st.Range, area = st.AreaRadius ~= 0 and st.AreaRadius or st.ExplodeRadius,
@@ -159,7 +161,9 @@ function Handlers.cast(args)
   local me = ActiveChar()
   needMyTurn(me)
   local skill = me.SkillManager.Skills[args.skill]
-  if skill == nil or not skill.IsLearned then error("Unknown skill " .. tostring(args.skill) .. " (see dos2_skills)") end
+  if skill == nil or not (skill.IsLearned or skill.IsActivated) then
+    error("Unknown skill " .. tostring(args.skill) .. " (see dos2_skills)")
+  end
   if not skill.IsActivated then error(args.skill .. " is not memorised") end
   if (skill.ActiveCooldown or 0) > 0 then error(args.skill .. " is on cooldown") end
   if args.target then
