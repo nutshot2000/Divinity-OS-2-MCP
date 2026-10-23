@@ -66,6 +66,8 @@ character's head), keep the pace up, and prefer the text tools over screenshots.
 | `dos2_cast` | Use a memorised skill on a target GUID or on the ground at x,z |
 | `dos2_end_turn` | End your turn and wait through the enemies' turns |
 | `dos2_wait_turn` | Wait until it is your turn |
+| `dos2_preview` | Who a skill or item (grenade, scroll) would hit at a target or spot, allies included, and if it is in range |
+| `dos2_use_on` | Throw or read an inventory item at a target or spot (grenades, skill scrolls); used up only if it happens |
 | `dos2_tactics` | Positioning map: squares reachable with this turn's AP, high ground, hazards, enemies, best spots |
 | `dos2_msgbox` | Read a yes/no prompt ("leave the Tutorial Deck?") and press a button by id |
 | `dos2_say` | Narrate: overhead text for the watcher |

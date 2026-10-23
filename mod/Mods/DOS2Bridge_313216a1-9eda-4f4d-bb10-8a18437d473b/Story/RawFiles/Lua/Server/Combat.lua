@@ -51,6 +51,11 @@ local function fighter(me, c, order)
     hp = s and s.CurrentVitality, max_hp = s and s.MaxVitality,
     armor = s and s.CurrentArmor, magic_armor = s and s.CurrentMagicArmor, ap = s and s.CurrentAP,
     x = p.x, z = p.z, dist = Dist(Pos(me), p), statuses = c:GetStatuses(),
+    -- The weapon hit chance the game shows on hover (spells always hit); the game's own formula.
+    hit_chance = c.MyGuid ~= me.MyGuid and (function ()
+      local ok, v = pcall(Game.Math.CalculateHitChance, me.Stats, c.Stats)
+      return ok and v or nil
+    end)() or nil,
   }
 end
 
@@ -177,4 +182,100 @@ function Handlers.end_turn()
   needMyTurn(me)
   Osi.EndTurn(me.MyGuid)
   return { ended = NameOf(me) }
+end
+
+
+--- The skill an item fires when used (grenades, scrolls), from its template's use actions.
+local function itemSkill(item)
+  local t = item.CurrentTemplate or item.RootTemplate
+  local ok, acts = pcall(function () return t.OnUsePeaceActions end)
+  if ok and acts then
+    for _, a in ipairs(acts) do
+      if tostring(a.Type) == "UseSkill" and a.SkillID then return a.SkillID end
+    end
+  end
+  return nil
+end
+
+local function aimPoint(me, args)
+  if args.target then
+    local t = GetChar(args.target) or GetItem(args.target)
+    if t == nil then error("No target with GUID " .. tostring(args.target)) end
+    if t.MyGuid ~= me.MyGuid and not CanSeeObject(me, t) then error((NameOf(t) or "That") .. " is not in sight") end
+    local p = Pos(t)
+    return p.x, p.z, t
+  end
+  if args.x == nil or args.z == nil then error("Give a target GUID, or x and z") end
+  return args.x, args.z, nil
+end
+
+--- Who a skill (or an item's skill) would hit if aimed here, like the game's targeting preview: everyone visible in
+--- its area (allies too), and whether the aim point is in range.
+function Handlers.skill_preview(args)
+  local me = ActiveChar()
+  local skillId = args.skill
+  if args.item then
+    local item = GetItem(args.item)
+    skillId = item and itemSkill(item)
+    if skillId == nil then error("That item has no skill to use") end
+  end
+  local st = Ext.Stats.Get(skillId, nil, false)
+  if st == nil then error("Unknown skill " .. tostring(skillId)) end
+  local x, z = aimPoint(me, args)
+  local mp = Pos(me)
+  local range = (st.TargetRadius ~= 0 and st.TargetRadius) or st.Range or 0
+  local area = (st.AreaRadius ~= 0 and st.AreaRadius) or st.ExplodeRadius or 0
+  local cone = st.SkillType == "Cone"
+  local aimDist = math.sqrt((x - mp.x) ^ 2 + (z - mp.z) ^ 2)
+  local hits = {}
+  for _, g in ipairs(Ext.Entity.GetCharacterGuidsAroundPosition(x, mp.y, z, math.max(area, range) + 2)) do
+    local c = GetChar(g)
+    if c and not c.Dead and c.MyGuid ~= me.MyGuid and CanSeeObject(me, c) then
+      local cp = Pos(c)
+      local hit
+      if cone then
+        -- in front of the caster, within range and the cone's angle
+        local ax, az, cx, cz = x - mp.x, z - mp.z, cp.x - mp.x, cp.z - mp.z
+        local la, lc = math.sqrt(ax * ax + az * az), math.sqrt(cx * cx + cz * cz)
+        local half = math.rad((st.Angle or 60) / 2)
+        hit = lc <= range and la > 0 and lc > 0 and math.acos(math.max(-1, math.min(1, (ax * cx + az * cz) / (la * lc)))) <= half
+      elseif area > 0 then
+        hit = math.sqrt((cp.x - x) ^ 2 + (cp.z - z) ^ 2) <= area
+      else
+        hit = args.target ~= nil and BareGuid(c.MyGuid) == BareGuid(args.target)
+      end
+      if hit then hits[#hits + 1] = { name = NameOf(c) or "someone", tags = CharacterTags(me.MyGuid, c) } end
+    end
+  end
+  return { skill = skillId, ap = st.ActionPoints, range = range, area = area, cone = cone or nil,
+    in_range = cone or range == 0 or aimDist <= range + 0.5, aim_dist = Round(aimDist), hits = hits }
+end
+
+--- Throw or read an item at a target or a spot: casts the item's skill (the game checks AP, range and line of sight).
+--- consume_item uses up one item afterwards, only once the cast has actually happened.
+function Handlers.use_item(args)
+  local me = ActiveChar()
+  needMyTurn(me)
+  local item = GetItem(args.item)
+  if item == nil then error("No item with GUID " .. tostring(args.item)) end
+  local owner = Osiq("GetInventoryOwner", item.MyGuid)
+  if owner == nil or BareGuid(owner) ~= BareGuid(me.MyGuid) then error((NameOf(item) or "That") .. " is not in your inventory") end
+  local skillId = itemSkill(item)
+  if skillId == nil then error((NameOf(item) or "That") .. " cannot be thrown or cast: use dos2_use to drink, eat or read it") end
+  local x, z, t = aimPoint(me, args)
+  if t then
+    -- CharacterUseSkill(character, skill, target, forceResetCooldown, ignoreHasSkill, ignoreChecks): the item grants the skill
+    Osi.CharacterUseSkill(me.MyGuid, skillId, t.MyGuid, 0, 1, 0)
+  else
+    local grid = Ext.Entity.GetAiGrid()
+    local y = (grid and grid:GetHeight(x, z)) or me.WorldPos[2]
+    Osi.CharacterUseSkillAtPosition(me.MyGuid, skillId, x, y, z, 0, 1)
+  end
+  return { using = NameOf(item), skill = skillId, template = Osiq("GetTemplate", item.MyGuid), ap_before = me.Stats.CurrentAP }
+end
+
+function Handlers.consume_item(args)
+  local me = ActiveChar()
+  Osi.ItemTemplateRemoveFrom(args.template, me.MyGuid, 1)
+  return { consumed = args.template }
 end
