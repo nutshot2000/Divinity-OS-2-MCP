@@ -180,6 +180,9 @@ function Handlers.use(args)
   if item == nil then error("No item with GUID " .. tostring(args.item)) end
   local event = "DOS2Bridge_use_" .. Ext.Utils.MonotonicTime()
   Uses[BareGuid(item.MyGuid)] = nil
+  -- A walk that stopped short of the item can leave its move task queued; using the item on top of it crashed the
+  -- game's client (a null write in its item-action code, four times). Start from an empty task queue.
+  Osi.CharacterPurgeQueue(me.MyGuid)
   -- CharacterUseItem(character, item, event)
   Osi.CharacterUseItem(me.MyGuid, item.MyGuid, event)
   return { using = NameOf(item), guid = item.MyGuid, event = event, tags = itemTags(item) }

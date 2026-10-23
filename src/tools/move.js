@@ -110,7 +110,15 @@ tool("dos2_use", "Use an item with the active character: open a container or doo
     }
     const before = await call("move_status", { event: "" });
     await call("book_text", {}, 5000, "client").catch(() => []); // forget pages read earlier
-    if (!near.carried) await focus(a.item, CLOSE); // a closer look at what is being opened or used
+    // Using an item straight after a walk crashed the game four times (a null write in the client's item-action code;
+    // the mod also purges queued tasks first). Let the character come to a stop (up to ~3 s): same spot twice running.
+    // The camera close-up comes once the item is open, not before.
+    for (let i = 0, last = before; i < 10; i++) {
+      await sleep(300);
+      const now = await call("move_status", { event: "" });
+      if (Math.hypot(now.x - last.x, now.z - last.z) < 0.05) break;
+      last = now;
+    }
     const started = await call("use", { item: a.item });
     const deadline = Date.now() + (a.timeout ?? 20) * 1000;
     let s = {};
@@ -126,6 +134,7 @@ tool("dos2_use", "Use an item with the active character: open a container or doo
     // Notes and books: give the text, as the book screen showed it.
     await sleep(500);
     const pages = await call("book_text", {}, 5000, "client").catch(() => []);
+    if ((pages.length || s.opened) && !near.carried) await focus(a.item, CLOSE); // a closer look at what was opened
     if (pages.length) {
       const body = pages.map((p) => String(p).replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]*>/g, "").trim()).join("\n\n");
       // Leave the book on screen long enough for the watcher to read some of it (panels close after the tool returns).
