@@ -70,6 +70,11 @@ character's head), keep the pace up, and prefer the text tools over screenshots.
 | `dos2_use_on` | Throw or read an inventory item at a target or spot (grenades, skill scrolls); used up only if it happens |
 | `dos2_tactics` | Positioning map: squares reachable with this turn's AP, high ground, hazards, enemies, best spots |
 | `dos2_msgbox` | Read a yes/no prompt ("leave the Tutorial Deck?") and press a button by id |
+| `dos2_sheet` | Character sheet: level, unspent points, attributes, abilities, talents, skills, memory slots |
+| `dos2_level_up` | Spend a point on an attribute, combat/civil ability or talent (talent-screen talents only; caps enforced) |
+| `dos2_memorise` | Memorise or forget a learned skill (memory slots enforced) |
+| `dos2_party` | List the party, pick who the tools act with, chain or unchain members |
+| `dos2_sneak` | Start or stop sneaking (out of combat) |
 | `dos2_say` | Narrate: overhead text for the watcher |
 | `dos2_screenshot` | Capture the game window. Expensive: only when the text tools cannot show what you need |
 | `dos2_help` | The playbook ([PLAYBOOK.md](PLAYBOOK.md)) |
@@ -96,6 +101,13 @@ or ally at your back so you are not flanked, step out of fire and poison, and fi
 physical armour, magic strips magic armour; knockdowns and other control effects only land once the matching armour
 is gone. Watch surfaces in `dos2_grid` and allies in area skills.
 
+**Levelling.** When a level-up notification appears, `dos2_sheet` shows the unspent points; plan a build that fits
+the character and spend them with `dos2_level_up` (out of combat). New skill books: `dos2_use` the book to learn it,
+then `dos2_memorise`.
+
+**Party.** Once others join, `dos2_party` lists them; `action=select` makes the tools act as that member (in combat,
+select whoever's turn it is), `chain`/`unchain` moves them together or apart.
+
 **Saving.** Quicksave (F5) before risky moments and after milestones; it needs the game window focused (screen control).
 
 Tutorial popups are dismissed automatically after every tool call; their text is appended to the tool's result as
@@ -108,7 +120,7 @@ NOT MET"). At 0 AP the game ends your turn by itself; `dos2_end_turn` then just 
 
 The bridge does not yet cover these; use screen control (screenshot + click/keys) sparingly:
 
-- Character creation, the character sheet and levelling up, trading, reading books and notes, inventory management.
+- Character creation, trading, reading books and notes.
 - Main-menu navigation. If the mouse is ignored there, the keyboard (arrows, Enter) works.
 
 Screen-control tips on Windows: run the game in borderless window mode (fullscreen minimises when it loses focus and

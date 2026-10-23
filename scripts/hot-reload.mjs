@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { call } from "../src/bridge.js";
 
 const LUA = fileURLToPath(new URL("../mod/Mods/DOS2Bridge_313216a1-9eda-4f4d-bb10-8a18437d473b/Story/RawFiles/Lua/Server/", import.meta.url));
-const files = process.argv.slice(2).length ? process.argv.slice(2) : ["Util.lua", "Handlers.lua", "Grid.lua", "Combat.lua", "Tactics.lua"];
+const files = process.argv.slice(2).length ? process.argv.slice(2) : ["Util.lua", "Handlers.lua", "Grid.lua", "Combat.lua", "Tactics.lua", "Character.lua"];
 for (const f of files) {
   // The prefix makes the file define its globals in the mod's table, not _G (load() ignores its env argument).
   await call("lua", { code: "local _ENV = Mods.DOS2Bridge\n" + readFileSync(LUA + f, "utf8") }, 10000);

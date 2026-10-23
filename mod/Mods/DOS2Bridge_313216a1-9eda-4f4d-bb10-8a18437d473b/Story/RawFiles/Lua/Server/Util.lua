@@ -68,8 +68,14 @@ function PartyGuids()
   return out
 end
 
---- The character the player is controlling: _C() (extender helper) if it works here, else the host character.
+--- The character the tools act with: the party member picked with dos2_party select (ActingGuid), else the one the
+--- player is controlling: _C() (extender helper) if it works here, else the host character.
 function ActiveChar()
+  if ActingGuid ~= nil then
+    local picked = GetChar(ActingGuid)
+    if picked ~= nil and not picked.Dead and Osiq("CharacterIsPartyMember", picked.MyGuid) == 1 then return picked end
+    ActingGuid = nil
+  end
   if _C ~= nil then
     local ok, c = pcall(_C)
     if ok and c ~= nil then return c end
