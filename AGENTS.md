@@ -54,7 +54,8 @@ character's head), keep the pace up, and prefer the text tools over screenshots.
 | `dos2_grid` | Draw an ASCII map: `#` blocked, `.` walkable, `d` door, `f` fire, `p` poison, `o` oil, `w`/`~` water, `?` unexplored |
 | `dos2_move` | Walk to x,z or to a GUID with the game's pathfinding; waits for arrival, a stop, combat or dialogue |
 | `dos2_use` | Use an item: open containers and doors, pull levers, take stairs and ladders (walks there first) |
-| `dos2_loot` | List an opened container you stand next to; `take="all"` or `take=[GUIDs]` to take; owned items are left alone |
+| `dos2_loot` | List an opened container or a dead body you stand next to; `take="all"` or `take=[GUIDs]` to take; owned items are left alone |
+| `dos2_equip` | Equip a weapon, shield or armour from your inventory (attribute requirements checked) |
 | `dos2_talk` | Walk up to a character and start a conversation |
 | `dos2_dialog` | Read the open conversation: new lines and numbered answers |
 | `dos2_answer` | Pick an answer by number; "(continue)" lines are stepped through automatically |

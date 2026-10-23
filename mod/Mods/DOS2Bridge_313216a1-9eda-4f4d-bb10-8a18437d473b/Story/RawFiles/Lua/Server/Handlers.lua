@@ -198,6 +198,14 @@ local LOOT_REACH = 3
 --- Fair play: a container's contents are only known once it is open and the character stands next to it, as with
 --- the loot window in game.
 local function openContainer(me, guid)
+  -- A dead body is looted by clicking it in game: no "open" step, just be next to it.
+  local body = GetChar(guid)
+  if body ~= nil then
+    if not body.Dead then error((NameOf(body) or "They") .. " is alive: no looting the living") end
+    local d = Dist(Pos(me), Pos(body))
+    if d > LOOT_REACH then error((NameOf(body) or "The body") .. " is " .. d .. "m away: walk to it first (dos2_move)") end
+    return body
+  end
   local box = GetItem(guid)
   if box == nil then error("No container with GUID " .. tostring(guid)) end
   if Osiq("ItemIsContainer", box.MyGuid) ~= 1 then error(NameOf(box) .. " is not a container") end
@@ -257,6 +265,29 @@ function Handlers.loot_take(args)
     end
   end
   return { container = NameOf(box), taken = taken, skipped_owned = skipped }
+end
+
+--- Equip an item from the active character's inventory. CharacterEquipItem itself does not enforce attribute
+--- requirements, so they are checked here first, as the inventory UI would.
+function Handlers.equip(args)
+  local me = ActiveChar()
+  local item = GetItem(args.item)
+  if item == nil then error("No item with GUID " .. tostring(args.item)) end
+  local owner = Osiq("GetInventoryOwner", item.MyGuid)
+  if owner == nil or BareGuid(owner) ~= BareGuid(me.MyGuid) then error((NameOf(item) or "That") .. " is not in your inventory") end
+  local unmet = {}
+  local ok, reqs = pcall(function () return item.Stats.Requirements end)
+  if ok and reqs then
+    for _, r in ipairs(reqs) do
+      local have = me.Stats[r.Requirement]
+      if type(have) == "number" and type(r.Param) == "number" and not r.Not and have < r.Param then
+        unmet[#unmet + 1] = r.Requirement .. " " .. r.Param .. " (you have " .. have .. ")"
+      end
+    end
+  end
+  if #unmet > 0 then error("Cannot equip " .. (NameOf(item) or "that") .. ": needs " .. table.concat(unmet, ", ")) end
+  Osi.CharacterEquipItem(me.MyGuid, item.MyGuid)
+  return { equipped = NameOf(item) }
 end
 
 --- Narration: a line of overhead text on the active character, so the watching player sees what is planned.
