@@ -52,7 +52,8 @@ character's head), keep the pace up, and prefer the text tools over screenshots.
 | `dos2_status` | See the party: position, HP, armour, AP, level, in combat/dialogue |
 | `dos2_look` | List characters and items in sight, nearest first, with GUIDs and tags (enemy, container, locked, ...) |
 | `dos2_grid` | Draw an ASCII map: `#` blocked, `.` walkable, `d` door, `f` fire, `p` poison, `o` oil, `w`/`~` water, `?` unexplored |
-| `dos2_move` | Walk to x,z or to a GUID with the game's pathfinding; waits for arrival, a stop, combat or dialogue |
+| `dos2_move` | Walk to x,z or a GUID along a route that avoids fire, poison and other hazards; stops at once on damage; refuses if every route crosses a hazard (`allow_hazards=true` to go anyway) |
+| `dos2_inventory` | List your inventory with descriptions; `dos2_use` an item to drink, eat or read it |
 | `dos2_use` | Use an item: open containers and doors, pull levers, take stairs and ladders (walks there first) |
 | `dos2_loot` | List an opened container or a dead body you stand next to; `take="all"` or `take=[GUIDs]` to take; owned items are left alone |
 | `dos2_equip` | Equip a weapon, shield or armour from your inventory (attribute requirements checked) |

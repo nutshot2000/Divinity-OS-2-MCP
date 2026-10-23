@@ -152,3 +152,93 @@ function Handlers.tactics(args)
   return { x = cx, z = cz, ap = ap, metres_per_ap = perAP, reach = Round(reach), rows = rows,
     enemies = enemies, high_ground = spots }
 end
+
+--- A walking route to x,z that avoids blocked cells, steep drops and hazards (fire, poison, ...), found with a
+--- search over the AI grid. The game's own pathfinding happily walks through fire, so dos2_move follows these
+--- waypoints instead. Returns { waypoints = {{x,z},...} } or { error = reason }.
+function Handlers.safe_path(args)
+  local grid = Ext.Entity.GetAiGrid()
+  if grid == nil then error("No AI grid: is a level loaded?") end
+  local me = ActiveChar()
+  local p = Pos(me)
+  local sx, sz = math.floor(p.x + 0.5), math.floor(p.z + 0.5)
+  local gx, gz = math.floor(args.x + 0.5), math.floor(args.z + 0.5)
+  local margin = 12
+  local minX, maxX = math.min(sx, gx) - margin, math.max(sx, gx) + margin
+  local minZ, maxZ = math.min(sz, gz) - margin, math.max(sz, gz) + margin
+  if (maxX - minX) * (maxZ - minZ) > 120 * 120 then error("Too far for one move: pick a closer point") end
+
+  local cache = {}
+  local function cell(x, z)
+    local k = x .. "," .. z
+    if cache[k] == nil then cache[k] = cellInfo(grid, x, z) end
+    return cache[k]
+  end
+  local function free(c) return c and not c.blocked and not c.unknown and not c.hazard and c.height end
+
+  -- The goal itself may be an object's cell (blocked) or in a hazard: accept the nearest free cell within 2 m.
+  local goalCell = cell(gx, gz)
+  if not free(goalCell) then
+    local best = nil
+    for dz = -2, 2 do for dx = -2, 2 do
+      local c = cell(gx + dx, gz + dz)
+      if free(c) and (best == nil or dx * dx + dz * dz < best[3]) then best = { gx + dx, gz + dz, dx * dx + dz * dz } end
+    end end
+    if best == nil then
+      return { error = goalCell.hazard and ("the destination is in " .. goalCell.hazard:lower()) or "the destination is blocked" }
+    end
+    gx, gz = best[1], best[2]
+  end
+
+  local start = sx .. "," .. sz
+  local dist, prev = { [start] = 0 }, {}
+  local open = { { sx, sz } }
+  local goalKey = gx .. "," .. gz
+  while #open > 0 do
+    local bi, best = 1, dist[open[1][1] .. "," .. open[1][2]]
+    for i = 2, #open do
+      local d = dist[open[i][1] .. "," .. open[i][2]]
+      if d < best then bi, best = i, d end
+    end
+    local cur = table.remove(open, bi)
+    local ck = cur[1] .. "," .. cur[2]
+    if ck == goalKey then break end
+    local here = cell(cur[1], cur[2])
+    for _, s in ipairs({ { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 }, { 1, 1 }, { 1, -1 }, { -1, 1 }, { -1, -1 } }) do
+      local nx, nz = cur[1] + s[1], cur[2] + s[2]
+      if nx >= minX and nx <= maxX and nz >= minZ and nz <= maxZ then
+        local c = cell(nx, nz)
+        local hh = here and here.height or c and c.height
+        if free(c) and hh and math.abs(c.height - hh) <= STEP_UP then
+          local nk = nx .. "," .. nz
+          local nd = best + ((s[1] ~= 0 and s[2] ~= 0) and 1.41 or 1)
+          if dist[nk] == nil or nd < dist[nk] then
+            dist[nk], prev[nk] = nd, ck
+            open[#open + 1] = { nx, nz }
+          end
+        end
+      end
+    end
+  end
+  if dist[goalKey] == nil then return { error = "every route crosses fire, poison or another hazard (or is blocked)" } end
+
+  -- Walk back from the goal; keep a waypoint wherever the direction changes, and at least every 6 cells.
+  local path = {}
+  local k = goalKey
+  while k do
+    local x, z = k:match("(-?%d+),(-?%d+)")
+    table.insert(path, 1, { tonumber(x), tonumber(z) })
+    k = prev[k]
+  end
+  local waypoints, sinceLast = {}, 0
+  for i = 2, #path do
+    sinceLast = sinceLast + 1
+    local a, b, c = path[i - 1], path[i], path[i + 1]
+    local turn = c and ((b[1] - a[1]) ~= (c[1] - b[1]) or (b[2] - a[2]) ~= (c[2] - b[2]))
+    if c == nil or turn or sinceLast >= 6 then
+      waypoints[#waypoints + 1] = { x = b[1], z = b[2] }
+      sinceLast = 0
+    end
+  end
+  return { waypoints = waypoints, length = Round(dist[goalKey]) }
+end

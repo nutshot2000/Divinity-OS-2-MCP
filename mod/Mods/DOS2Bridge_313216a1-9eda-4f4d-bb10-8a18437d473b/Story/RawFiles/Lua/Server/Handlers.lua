@@ -158,7 +158,19 @@ function Handlers.move_status(args)
     arrived = Arrivals[args.event] == true, x = p.x, z = p.z,
     dist_to_goal = gx and Dist(p, { x = gx, z = gz }) or nil,
     in_combat = Osiq("CharacterIsInCombat", me.MyGuid) == 1, in_dialog = me.InDialog,
+    hp = me.Stats.CurrentVitality, statuses = me:GetStatuses(),
   }
+end
+
+--- Where an object is (for planning a route to it). Only for objects the character can see.
+function Handlers.object_pos(args)
+  local me = ActiveChar()
+  local o = GetChar(args.guid) or GetItem(args.guid)
+  if o == nil then error("No object with GUID " .. tostring(args.guid)) end
+  local owner = Osiq("GetInventoryOwner", o.MyGuid)
+  if owner ~= nil and owner ~= "" then error((NameOf(o) or "That") .. " is in an inventory, not on the ground") end
+  local p = Pos(o)
+  return { x = p.x, z = p.z, y = p.y, dist = Dist(Pos(me), p) }
 end
 
 function Handlers.use(args)
@@ -175,10 +187,14 @@ end
 function Handlers.use_status(args)
   local item = GetItem(args.item)
   local me = ActiveChar()
+  -- Items in an inventory report the world origin as their position: never walk to them.
+  local owner = item and Osiq("GetInventoryOwner", item.MyGuid)
+  local carried = owner ~= nil and owner ~= ""
   return {
+    carried = carried,
     result = Uses[BareGuid(args.item)],
     opened = item and Osiq("ItemIsOpened", item.MyGuid) == 1 or false,
-    dist = item and Dist(Pos(me), Pos(item)) or nil,
+    dist = item and not carried and Dist(Pos(me), Pos(item)) or (carried and 0 or nil),
     in_combat = Osiq("CharacterIsInCombat", me.MyGuid) == 1, in_dialog = me.InDialog,
   }
 end
@@ -265,6 +281,33 @@ function Handlers.loot_take(args)
     end
   end
   return { container = NameOf(box), taken = taken, skipped_owned = skipped }
+end
+
+--- The active character's inventory, as the inventory screen shows it: name, amount, equipped, type and the item's
+--- description. Unidentified items stay unidentified.
+function Handlers.inventory()
+  local me = ActiveChar()
+  local out = {}
+  for _, g in ipairs(me:GetInventoryItems() or {}) do
+    local it = GetItem(g)
+    if it then
+      local stats = it.StatsId
+      local desc, kind = nil, nil
+      local ok, st = pcall(Ext.Stats.Get, stats, nil, false)
+      if ok and st then
+        kind = st.ItemGroup ~= "" and st.ItemGroup or nil
+        local okd, d = pcall(function () return Ext.L10N.GetTranslatedStringFromKey(st.Description) end)
+        if okd and d ~= "" then desc = d end
+      end
+      local identified = true
+      pcall(function () identified = it.Stats == nil or it.Stats.IsIdentified ~= 0 end)
+      out[#out + 1] = { name = NameOf(it) or stats, guid = it.MyGuid, amount = it.Amount or 1,
+        equipped = it.Slot ~= nil and it.Slot < 14, stats = identified and stats or "(unidentified)",
+        description = identified and desc or nil }
+    end
+  end
+  table.sort(out, function (a, b) return a.name < b.name end)
+  return out
 end
 
 --- Equip an item from the active character's inventory. CharacterEquipItem itself does not enforce attribute
