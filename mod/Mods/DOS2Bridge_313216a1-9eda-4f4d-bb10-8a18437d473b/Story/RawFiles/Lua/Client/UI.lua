@@ -76,6 +76,54 @@ subscribe(Ext.Events.UIInvoke, function (e) pcall(recordDialog, "invoke", e) end
 -- This one only records the dialogue screen's calls.
 subscribe(Ext.Events.UICall, function (e) pcall(recordDialog, "call", e) end)
 
+-- Popups. Tutorial boxes (UI 55) arrive as fadeInModal(category, title, text) and close with OkPressed; message
+-- boxes (UI 29, e.g. "leave the Tutorial Deck?") are built from invokes and answered with ButtonPressed(id).
+TUTORIAL_UI, MSGBOX_UI = 55, 29
+PendingTutorials = PendingTutorials or {}
+MsgBoxCalls = MsgBoxCalls or {}
+local function recordPopup(e)
+  local ok, typeId = pcall(function () return e.UI:GetTypeId() end)
+  if not ok or tostring(e.When) == "After" then return end
+  if typeId == TUTORIAL_UI and e.Function == "fadeInModal" then
+    local a = argsOf(e)
+    PendingTutorials[#PendingTutorials + 1] = { category = a[1], title = a[2], text = a[3] }
+  elseif typeId == MSGBOX_UI then
+    if e.Function == "removeButtons" then MsgBoxCalls = {} end
+    MsgBoxCalls[#MsgBoxCalls + 1] = { fn = e.Function, args = argsOf(e) }
+    if #MsgBoxCalls > 40 then table.remove(MsgBoxCalls, 1) end
+  end
+end
+subscribe(Ext.Events.UIInvoke, function (e) pcall(recordPopup, e) end)
+
+local function uiVisible(typeId)
+  local ui = Ext.UI.GetByType(typeId)
+  if ui == nil then return false end
+  local ok, visible = pcall(function () return ui.OF_Visible end)
+  return not ok or visible ~= false
+end
+
+--- Dismiss any open tutorial boxes ("Understood") and return what they said.
+function ClientHandlers.tutorials()
+  local shown = PendingTutorials
+  PendingTutorials = {}
+  if #shown > 0 and uiVisible(TUTORIAL_UI) then
+    for _ = 1, #shown do pcall(function () Ext.UI.GetByType(TUTORIAL_UI):ExternalInterfaceCall("OkPressed") end) end
+  end
+  return shown
+end
+
+--- The open message box, if any: the raw invokes that built it (text and buttons), for the server tool to parse.
+function ClientHandlers.msgbox()
+  return { open = uiVisible(MSGBOX_UI), calls = MsgBoxCalls }
+end
+
+function ClientHandlers.msgbox_press(args)
+  local ui = Ext.UI.GetByType(MSGBOX_UI)
+  if ui == nil then error("No message box open") end
+  ui:ExternalInterfaceCall("ButtonPressed", args.id)
+  return { pressed = args.id }
+end
+
 function ClientHandlers.dialog_log(args)
   local out = {}
   for _, entry in ipairs(DialogLog) do

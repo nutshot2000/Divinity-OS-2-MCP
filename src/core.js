@@ -20,13 +20,28 @@ export const text = (s) => ({ content: [{ type: "text", text: s }] });
 export const fail = (s) => ({ content: [{ type: "text", text: s }], isError: true });
 export const json = (v) => JSON.stringify(v, null, 1);
 
+/** Tutorial popups block play until dismissed: after every tool, dismiss any that appeared and report their text. */
+async function tutorialNote() {
+  try {
+    const shown = await call("tutorials", {}, 5000, "client");
+    return shown.map((t) => `\n\n[Tutorial dismissed: ${t.title} — ${String(t.text).replace(/<[^>]*>/g, "")}]`).join("");
+  } catch { return ""; } // client half not running (main menu, loading): nothing to dismiss
+}
+
 export function tool(name, description, shape, fn) {
   server.registerTool(name, { description, inputSchema: shape }, async (args) => {
+    let result;
     try {
-      return await fn(args ?? {});
+      result = await fn(args ?? {});
     } catch (e) {
-      return fail(String(e.message || e));
+      result = fail(String(e.message || e));
     }
+    const note = await tutorialNote();
+    if (note) {
+      const first = result.content.find((c) => c.type === "text");
+      if (first) first.text += note; else result.content.push({ type: "text", text: note.trim() });
+    }
+    return result;
   });
 }
 

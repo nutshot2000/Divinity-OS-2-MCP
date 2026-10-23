@@ -64,6 +64,7 @@ character's head), keep the pace up, and prefer the text tools over screenshots.
 | `dos2_cast` | Use a memorised skill on a target GUID or on the ground at x,z |
 | `dos2_end_turn` | End your turn and wait through the enemies' turns |
 | `dos2_wait_turn` | Wait until it is your turn |
+| `dos2_msgbox` | Read a yes/no prompt ("leave the Tutorial Deck?") and press a button by id |
 | `dos2_say` | Narrate: overhead text for the watcher |
 | `dos2_screenshot` | Capture the game window. Expensive: only when the text tools cannot show what you need |
 | `dos2_help` | The playbook ([PLAYBOOK.md](PLAYBOOK.md)) |
@@ -90,11 +91,16 @@ is gone. Watch surfaces in `dos2_grid` and allies in area skills.
 
 **Saving.** Quicksave (F5) before risky moments and after milestones; it needs the game window focused (screen control).
 
+Tutorial popups are dismissed automatically after every tool call; their text is appended to the tool's result as
+`[Tutorial dismissed: ...]`. Read them: they teach mechanics.
+
+If a skill does nothing and the tool says "refused", check its requirement in `dos2_skills` (e.g. "needs a shield:
+NOT MET"). At 0 AP the game ends your turn by itself; `dos2_end_turn` then just waits.
+
 ## Things that need the screen (for now)
 
 The bridge does not yet cover these; use screen control (screenshot + click/keys) sparingly:
 
-- Yes/no message boxes some actions raise (e.g. "leave the Tutorial Deck?"). Until answered, the character is stuck.
 - Character creation, the character sheet and levelling up, trading, reading books and notes, inventory management.
 - Main-menu navigation. If the mouse is ignored there, the keyboard (arrows, Enter) works.
 

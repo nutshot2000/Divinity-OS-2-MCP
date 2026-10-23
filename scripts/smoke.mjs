@@ -6,7 +6,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { fileURLToPath } from "node:url";
 
 const dev = process.env.DOS2_DEV === "1";
-const EXPECTED = ["dos2_status", "dos2_look", "dos2_grid", "dos2_move", "dos2_use", "dos2_say", "dos2_loot", "dos2_dialog", "dos2_answer", "dos2_talk", "dos2_combat", "dos2_skills", "dos2_attack", "dos2_cast", "dos2_end_turn", "dos2_wait_turn", "dos2_help", "dos2_ping",
+const EXPECTED = ["dos2_status", "dos2_look", "dos2_grid", "dos2_move", "dos2_use", "dos2_say", "dos2_loot", "dos2_dialog", "dos2_answer", "dos2_talk", "dos2_msgbox", "dos2_combat", "dos2_skills", "dos2_attack", "dos2_cast", "dos2_end_turn", "dos2_wait_turn", "dos2_help", "dos2_ping",
   "dos2_screenshot", ...(dev ? ["dos2_lua"] : [])];
 const READ_ONLY = [["dos2_ping", {}], ["dos2_status", {}], ["dos2_look", { radius: 10, limit: 5 }],
   ["dos2_grid", { radius: 6 }], ...(dev ? [["dos2_lua", { code: "return { ok = true }" }]] : [])];

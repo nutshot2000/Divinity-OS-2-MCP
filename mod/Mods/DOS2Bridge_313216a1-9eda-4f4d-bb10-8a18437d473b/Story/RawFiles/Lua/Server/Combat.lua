@@ -87,6 +87,24 @@ local function translated(handle, fallback)
   return fallback
 end
 
+-- Skill requirements (stat "Requirement") and the equipment check that meets them, as the tooltip's
+-- "Requires a shield" line shows.
+local REQUIREMENTS = {
+  ShieldWeapon = { text = "needs a shield", slot = "Shield" },
+  MeleeWeapon = { text = "needs a melee weapon", slot = "Weapon" },
+  RangedWeapon = { text = "needs a bow or crossbow", slot = "Weapon" },
+  DaggerWeapon = { text = "needs a dagger", slot = "Weapon" },
+  StaffWeapon = { text = "needs a staff", slot = "Weapon" },
+  RifleWeapon = { text = "needs a rifle", slot = "Weapon" },
+}
+
+local function requirementMet(me, req)
+  local r = REQUIREMENTS[req]
+  if r == nil then return nil end
+  local g = Osiq("CharacterGetEquippedItem", me.MyGuid, r.slot)
+  return { text = r.text, met = g ~= nil and g ~= "" }
+end
+
 --- The active character's skills, as the hotbar and tooltips show them.
 function Handlers.skills()
   local me = ActiveChar()
@@ -104,6 +122,7 @@ function Handlers.skills()
           targets = { characters = st.CanTargetCharacters == "Yes", items = st.CanTargetItems == "Yes",
             ground = st.CanTargetTerrain == "Yes" },
           description = translated(st.Description, nil),
+          requirement = requirementMet(me, st.Requirement),
         }
       end
     end

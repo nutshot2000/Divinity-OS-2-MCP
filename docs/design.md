@@ -119,7 +119,14 @@ Read from the ositools source (`ScriptExtender/Lua`, `ScriptExtender/Extender`, 
   invoke. Answering = `ExternalInterfaceCall("QuestionPressed", index)`, the call a click makes. Starting a talk =
   raising the Osiris event `DialogStartRequested(npc, player)` (what a click raises; NPCs like Siwan have no
   `DB_Dialogs` row). Array names came from the strings in `Public/Game/GUI/dialog.swf` (Game.pak).
-- **Combat (built, untested in a fight):** `Server/Combat.lua`. Turn order from
+- **Combat tested in a fight (2 Viscous Voidlings, won unarmed):** status, skills, cast, attack, end turn and wait
+  all work. The game refuses actions silently (e.g. Bouncing Shield with no shield), so tools report "refused" when
+  no AP was spent, and `dos2_skills` shows requirements (needs a shield / melee weapon) and whether they are met.
+  At 0 AP the game ends the turn itself. `ObjectTurnStarted` fires several times per turn (collapsed in the log).
+- **Popups:** tutorial boxes (UI 55, `fadeInModal(category, title, text)`, closed with `OkPressed`) are dismissed
+  after every tool call and their text is appended to the result. Message boxes (UI 29) are read and answered with
+  `dos2_msgbox` (`ButtonPressed(id)`); not yet tested on a live prompt. Names from `tutorialBox.swf` / `msgBox.swf`.
+- **Combat (implementation):** `Server/Combat.lua`. Turn order from
   `Ext.Entity.GetCombat(id):GetCurrentTurnOrder()`, active turn from `CombatGetActiveEntity`, skills from
   `SkillManager.Skills` + `Ext.Stats.Get`, actions via `CharacterAttack`, `CharacterUseSkill(..., 0, 0, 0)` /
   `CharacterUseSkillAtPosition`, `EndTurn`. A small log from `SkillCast`, `CharacterDied`, `ObjectTurnStarted`,
