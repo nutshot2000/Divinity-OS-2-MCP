@@ -3,6 +3,7 @@
 Arrivals = {}  -- event name -> true once the StoryEvent for that move has fired
 Moves = {}     -- event name -> goal of that move, for move_status
 Uses = {}      -- item GUID -> "used" | "failed", from the CharacterUsedItem(Failed) events
+OpenedByUs = OpenedByUs or {}  -- container GUID -> time it was opened (the loot window is closed again right away)
 
 --- Call an Osiris function or query by name; nil instead of an error when it fails or does not exist.
 function Osiq(name, ...)

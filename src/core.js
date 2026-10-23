@@ -20,12 +20,19 @@ export const text = (s) => ({ content: [{ type: "text", text: s }] });
 export const fail = (s) => ({ content: [{ type: "text", text: s }], isError: true });
 export const json = (v) => JSON.stringify(v, null, 1);
 
-/** Tutorial popups block play until dismissed: after every tool, dismiss any that appeared and report their text. */
+/** After every tool: dismiss tutorial popups (they block play) and report their text, and close panels left open on
+ *  screen (loot windows from opening containers, inventory, journal, ...), so nothing piles up while playing. */
 async function tutorialNote() {
+  let note = "";
   try {
     const shown = await call("tutorials", {}, 5000, "client");
-    return shown.map((t) => `\n\n[Tutorial dismissed: ${t.title} — ${String(t.text).replace(/<[^>]*>/g, "")}]`).join("");
-  } catch { return ""; } // client half not running (main menu, loading): nothing to dismiss
+    note += shown.map((t) => `\n\n[Tutorial dismissed: ${t.title} — ${String(t.text).replace(/<[^>]*>/g, "")}]`).join("");
+  } catch { /* client half not running (main menu, loading): nothing to dismiss */ }
+  try {
+    const closed = await call("tidy_ui", {}, 5000, "client");
+    if (closed.length) note += `\n[Closed on screen: ${closed.join(", ")}]`;
+  } catch { /* same */ }
+  return note;
 }
 
 export function tool(name, description, shape, fn) {

@@ -60,6 +60,10 @@ watching. This file is sent to you as the server's instructions; `dos2_help` ret
    healing potions.**
 6. A yes/no box popped up ("Are you sure...?"): `dos2_msgbox` reads it, `dos2_msgbox button=<id>` answers.
    Tutorial popups are closed for you automatically; their text appears in the tool result – read it.
+7. Menus left open on screen (loot windows, inventory, journal, pause menu) are closed for you after every tool;
+   the result says "[Closed on screen: ...]". You do not need to close anything yourself.
+8. Stairs, ladders and hatches: `dos2_use item=<GUID>`. The result says "now at x,z (moved N m)" when you changed
+   floor or area – then `dos2_look` to see where you are.
 
 ## Combat (turn-based)
 
@@ -111,6 +115,7 @@ The bridge cannot save. At milestones and before risky moments, ask the watching
 | What you see | What to do |
 |--|--|
 | "No heartbeat" / "last answered Ns ago" / "game is loading" | The game is on a menu or loading. Wait 10–20 s, call `dos2_ping`. |
+| "game is loading" right after stairs, a ladder or a door | Normal: the area is changing. Wait a few seconds, then `dos2_status`. |
 | "Unknown command: ..." | The game was reloaded with an old mod. Tell the player to run `scripts/install-mod.ps1` with the game closed. |
 | A move keeps stopping or refusing | `dos2_grid` to see walls and hazards; pick a nearer point or a different route. |
 | "did not start a conversation" | That person has nothing to say right now. Try again later. |

@@ -114,6 +114,40 @@ function ClientHandlers.tutorials()
 end
 
 --- The open message box, if any: the raw invokes that built it (text and buttons), for the server tool to parse.
+-- Panels that can be left open on screen (opening a container shows its loot window, a stray key opens the journal,
+-- ...). Dialogue and message boxes are not here: those need an answer, not closing. Close-call names from each SWF.
+local PANELS = {
+  ["containerInventory.swf"] = "loot window", ["partyInventory.swf"] = "inventory", ["characterSheet.swf"] = "character sheet",
+  ["journal.swf"] = "journal", ["examine.swf"] = "examine window", ["uiCraft.swf"] = "crafting", ["skills.swf"] = "skills",
+  ["trade.swf"] = "trade", ["book.swf"] = "book", ["waypoints.swf"] = "waypoints", ["gameMenu.swf"] = "pause menu",
+}
+local CLOSE_CALLS = { "hideUI", "closeUI", "requestCloseUI", "closePressed", "cancelPressed", "closeMe" }
+
+local function isVisible(ui)
+  local ok, v = pcall(function () return ui.OF_Visible end)
+  return ok and v == true
+end
+
+--- Close every open panel from PANELS and say which ones were closed.
+function ClientHandlers.tidy_ui()
+  local closed = {}
+  for typeId = 0, 200 do
+    local ok, ui = pcall(Ext.UI.GetByType, typeId)
+    if ok and ui ~= nil and isVisible(ui) then
+      local file = tostring(ui.Path):match("[^/\\]+$")
+      local label = PANELS[file]
+      if label then
+        for _, fn in ipairs(CLOSE_CALLS) do
+          pcall(function () ui:ExternalInterfaceCall(fn) end)
+          if not isVisible(ui) then break end
+        end
+        closed[#closed + 1] = isVisible(ui) and (label .. " (could not close)") or label
+      end
+    end
+  end
+  return closed
+end
+
 function ClientHandlers.msgbox()
   return { open = uiVisible(MSGBOX_UI), calls = MsgBoxCalls }
 end

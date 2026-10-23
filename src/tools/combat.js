@@ -17,8 +17,6 @@ function show(s) {
   const lastTurn = s.log.map((e) => e.event).lastIndexOf("turn");
   const log = s.log.filter((e, i) => e.event !== "turn" || i === lastTurn).map((e) => e.event === "cast" ? `${e.who} cast ${e.skill}` : e.event === "died" ? `${e.who} died`
     : e.event === "turn" ? `-- ${e.who}'s turn` : e.event).join("\n");
-  logUpTo = s.log_last;
-  try { writeFileSync(MARK, String(logUpTo)); } catch { /* best effort */ }
   if (!s.in_combat) return (log ? `${log}\n\n` : "") + "Not in combat.";
   const fighters = s.fighters.map((f) => `  ${f.order}. ${f.name} [${f.guid}] ${hpText(f)}, ${f.ap} AP, ${f.dist}m at ${f.x},${f.z}` +
     (f.hit_chance != null && f.tags.includes("enemy") ? `, ${f.hit_chance}% to hit` : "") +
@@ -29,25 +27,30 @@ function show(s) {
 }
 
 // The mod's log restarts at 0 after a game restart; a stale mark would hide everything, so it is reset then.
+// Every poll moves the mark forward, so each log entry is returned exactly once (polling loops used to fetch the same
+// entries again on every poll).
 const state = async () => {
-  const s = await call("combat", { since: logUpTo });
-  if (s.log_last < logUpTo) { logUpTo = 0; return call("combat", { since: 0 }); }
+  let s = await call("combat", { since: logUpTo });
+  if (s.log_last < logUpTo) s = await call("combat", { since: 0 });
+  logUpTo = s.log_last;
+  try { writeFileSync(MARK, String(logUpTo)); } catch { /* best effort */ }
   return s;
 };
 
 /** After an action: wait until AP drops, the turn passes or the fight ends (max ~12 s). */
 async function afterAction(apBefore) {
-  let s;
+  const log = [];
   for (let i = 0; i < 30; i++) {
     await sleep(400);
-    s = await state();
+    const s = await state();
+    log.push(...s.log);
     if (!s.in_combat || !s.my_turn || s.me.ap < apBefore) break;
   }
   await sleep(800); // let the animation and damage land
   const final = await state();
   // The game refuses actions silently (requirement not met, out of range, blocked): nothing changes at all.
   final.refused = final.in_combat && final.my_turn && final.me.ap >= apBefore;
-  final.log = [...(s?.log ?? []), ...final.log.filter((e) => !(s?.log ?? []).some((o) => o.seq === e.seq))];
+  final.log = [...log, ...final.log];
   return final;
 }
 

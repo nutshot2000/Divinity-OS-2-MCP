@@ -191,10 +191,14 @@ function Handlers.use_status(args)
   -- Items in an inventory report the world origin as their position: never walk to them.
   local owner = item and Osiq("GetInventoryOwner", item.MyGuid)
   local carried = owner ~= nil and owner ~= ""
+  local opened = item and Osiq("ItemIsOpened", item.MyGuid) == 1 or false
+  -- Remember containers the character really opened: the bridge closes the loot window afterwards (so menus do not
+  -- pile up), which also marks the container closed, but its contents stay known to the player.
+  if opened then OpenedByUs[BareGuid(args.item)] = Ext.Utils.MonotonicTime() end
   return {
     carried = carried,
     result = Uses[BareGuid(args.item)],
-    opened = item and Osiq("ItemIsOpened", item.MyGuid) == 1 or false,
+    opened = opened,
     dist = item and not carried and Dist(Pos(me), Pos(item)) or (carried and 0 or nil),
     in_combat = Osiq("CharacterIsInCombat", me.MyGuid) == 1, in_dialog = me.InDialog,
   }
@@ -228,7 +232,11 @@ local function openContainer(me, guid)
   if Osiq("ItemIsContainer", box.MyGuid) ~= 1 then error(NameOf(box) .. " is not a container") end
   local d = Dist(Pos(me), Pos(box))
   if d > LOOT_REACH then error(NameOf(box) .. " is " .. d .. "m away: walk to it and open it first (dos2_use)") end
-  if Osiq("ItemIsOpened", box.MyGuid) ~= 1 then error(NameOf(box) .. " is closed: open it first (dos2_use)") end
+  local openedAt = OpenedByUs[BareGuid(box.MyGuid)]
+  local recentlyOpened = openedAt ~= nil and Ext.Utils.MonotonicTime() - openedAt < 5 * 60 * 1000
+  if Osiq("ItemIsOpened", box.MyGuid) ~= 1 and not recentlyOpened then
+    error(NameOf(box) .. " is closed: open it first (dos2_use)")
+  end
   return box
 end
 

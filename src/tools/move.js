@@ -3,6 +3,19 @@ import { tool, call, text, json, z, guid } from "../core.js";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/** A status call during polling. Stairs, ladders and doors that change area make the game briefly "not running"
+ *  (and calls time out): that is part of the action succeeding, so wait and retry instead of reporting an error. */
+async function poll(cmd, args, maxWaitMs = 20000) {
+  const deadline = Date.now() + maxWaitMs;
+  for (;;) {
+    try { return await call(cmd, args, 5000); }
+    catch (e) {
+      if (Date.now() > deadline || !/loading|not running|No answer|last answered/.test(String(e.message))) throw e;
+      await sleep(1000);
+    }
+  }
+}
+
 /** Poll the mod until the move with this event finishes, stalls or times out. Stops early when the character starts
  *  taking damage (walking into fire, a trap, an attack), so a bad route costs as little as possible. */
 async function waitForMove(event, timeoutMs, startHp, startedInCombat = false, startStatuses = []) {
@@ -10,7 +23,7 @@ async function waitForMove(event, timeoutMs, startHp, startedInCombat = false, s
   let last = null, stillSince = Date.now();
   while (Date.now() < deadline) {
     await sleep(400);
-    const s = await call("move_status", { event });
+    const s = await poll("move_status", { event });
     // Stop for fresh harm (a new status such as BURNING, or a real hit), not for poison or bleeding that was already
     // ticking before the move started.
     const newStatus = s.statuses.some((st) => !startStatuses.includes(st) && /BURNING|POISONED|BLEEDING|ACID|ELECTRIFIED|SHOCKED|FROZEN|NECROFIRE|SUFFOCATING|HIT/.test(st));
@@ -89,18 +102,23 @@ tool("dos2_use", "Use an item with the active character: open a container or doo
       const m = await walkTo({ target: a.item });
       if (m.refused || m.hurt || !/arrived|stopped/.test(m.outcome)) return text(`Did not reach the item: ${m.outcome}`);
     }
+    const before = await call("move_status", { event: "" });
     const started = await call("use", { item: a.item });
     const deadline = Date.now() + (a.timeout ?? 20) * 1000;
     let s = {};
     while (Date.now() < deadline) {
       await sleep(400);
-      s = await call("use_status", { item: started.guid });
+      s = await poll("use_status", { item: started.guid });
       if (s.in_combat || s.in_dialog) break;
       // A container reports "used" before its loot window is open; give it a moment to open.
       if (s.result && (!started.tags.includes("container") || s.opened || s.result === "failed")) break;
     }
     const outcome = s.result === "used" ? "used" : s.result === "failed" ? "failed (out of reach, locked or not usable)"
       : s.in_combat ? "interrupted: combat started" : s.in_dialog ? "interrupted: dialogue started" : "no result yet (still walking?)";
+    // Stairs, ladders and hatches move the character: say where to, instead of a distance to the item left behind.
+    const after = await poll("move_status", { event: "" });
+    const moved = Math.hypot(after.x - before.x, after.z - before.z);
+    if (moved > 3) return text(`${started.using}: used - now at ${after.x},${after.z} (moved ${Math.round(moved)}m). Look around with dos2_look.`);
     return text(`${started.using}: ${outcome}` + (s.opened ? ", now open" : "") +
       (s.dist != null ? ` (${s.dist}m away)` : ""));
   });

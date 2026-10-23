@@ -152,6 +152,7 @@ function Handlers.attack(args)
   needMyTurn(me)
   local target = GetChar(args.target) or GetItem(args.target)
   if target == nil then error("No target with GUID " .. tostring(args.target)) end
+  if target.Dead then error((NameOf(target) or "That") .. " is already dead: pick another target") end
   if not CanSeeObject(me, target) then error((NameOf(target) or "That") .. " is not in sight") end
   Osi.CharacterAttack(me.MyGuid, target.MyGuid)
   return { attacking = NameOf(target), ap_before = me.Stats.CurrentAP }
