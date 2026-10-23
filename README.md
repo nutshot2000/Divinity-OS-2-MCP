@@ -36,10 +36,14 @@ Watching: notes and books stay on screen for a few seconds (3 s plus ~1 s per 40
 windows for 3 s before they close, so the viewer can read them. Set `DOS2_READ_SECONDS` / `DOS2_LOOT_SECONDS` in the
 MCP server's environment to change this (`0` = close at once, for faster unwatched runs).
 
+Camera director: the camera frames the action by itself – close-ups on conversations, attacker and target in combat,
+following whoever acts on enemy turns, a closer look at chests and books, and the wide view while exploring. Set
+`DOS2_CINEMATIC=0` to turn it off.
+
 Tips: use **borderless window** mode (fullscreen minimises when it loses focus). Set `DOS2_DATA_DIR` if the game's
 `Osiris Data` folder is not under `Documents` or `OneDrive\Documents`.
 
-## Tools (30)
+## Tools (31)
 
 | Area | Tools |
 |--|--|
@@ -49,6 +53,7 @@ Tips: use **borderless window** mode (fullscreen minimises when it loses focus).
 | Items | `dos2_loot` (containers and bodies), `dos2_inventory`, `dos2_equip` |
 | Combat | `dos2_combat`, `dos2_tactics`, `dos2_skills`, `dos2_attack`, `dos2_cast`, `dos2_preview`, `dos2_use_on`, `dos2_end_turn`, `dos2_wait_turn` |
 | Character and party | `dos2_sheet`, `dos2_level_up`, `dos2_memorise`, `dos2_party`, `dos2_sneak` |
+| Camera | `dos2_camera` (point, zoom, rotate; only at visible things or explored ground) |
 | Help | `dos2_help` (returns the playbook) |
 
 `dos2_lua` (raw Lua) is a debugging tool, only registered with `DOS2_DEV=1`, and never used for play.

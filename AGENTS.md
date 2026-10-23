@@ -75,6 +75,7 @@ character's head), keep the pace up, and prefer the text tools over screenshots.
 | `dos2_memorise` | Memorise or forget a learned skill (memory slots enforced) |
 | `dos2_party` | List the party, pick who the tools act with, chain or unchain members |
 | `dos2_sneak` | Start or stop sneaking (out of combat) |
+| `dos2_camera` | Point, zoom or rotate the camera for the watcher (visible things or explored ground only); it also moves by itself to frame talks, fights and looting |
 | `dos2_say` | Narrate: overhead text for the watcher |
 | `dos2_screenshot` | Capture the game window. Expensive: only when the text tools cannot show what you need |
 | `dos2_help` | The playbook ([PLAYBOOK.md](PLAYBOOK.md)) |

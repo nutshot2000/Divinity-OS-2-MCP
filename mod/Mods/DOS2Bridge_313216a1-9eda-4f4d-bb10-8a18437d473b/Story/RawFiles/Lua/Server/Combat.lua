@@ -80,7 +80,7 @@ function Handlers.combat(args)
   end
   return {
     in_combat = true, combat_id = id,
-    active = active and nameOfGuid(active), my_turn = active ~= nil and BareGuid(active) == BareGuid(me.MyGuid),
+    active = active and nameOfGuid(active), active_guid = active, my_turn = active ~= nil and BareGuid(active) == BareGuid(me.MyGuid),
     me = fighter(me, me, 0), fighters = fighters, log = log, log_last = CombatLogSeq,
   }
 end
@@ -176,7 +176,7 @@ function Handlers.cast(args)
     return { casting = args.skill, at = NameOf(target), ap_before = me.Stats.CurrentAP }
   end
   local grid = Ext.Entity.GetAiGrid()
-  local y = (grid and grid:GetHeight(args.x, args.z)) or me.WorldPos[2]
+  local y = GridHeight(grid, args.x, args.z) or me.WorldPos[2]
   -- CharacterUseSkillAtPosition(character, skill, x, y, z, forceResetCooldown, ignoreHasSkill)
   Osi.CharacterUseSkillAtPosition(me.MyGuid, args.skill, args.x, y, args.z, 0, 0)
   return { casting = args.skill, at = { x = args.x, z = args.z }, ap_before = me.Stats.CurrentAP }
@@ -273,7 +273,7 @@ function Handlers.use_item(args)
     Osi.CharacterUseSkill(me.MyGuid, skillId, t.MyGuid, 0, 1, 0)
   else
     local grid = Ext.Entity.GetAiGrid()
-    local y = (grid and grid:GetHeight(x, z)) or me.WorldPos[2]
+    local y = GridHeight(grid, x, z) or me.WorldPos[2]
     Osi.CharacterUseSkillAtPosition(me.MyGuid, skillId, x, y, z, 0, 1)
   end
   return { using = NameOf(item), skill = skillId, template = Osiq("GetTemplate", item.MyGuid), ap_before = me.Stats.CurrentAP }

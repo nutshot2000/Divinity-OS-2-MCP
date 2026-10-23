@@ -87,6 +87,27 @@ function ActiveChar()
   return c
 end
 
+--- True if x,z lies inside the level's AI grid. Asking GetCellInfo/GetHeight about a point outside it crashes the
+--- game (pcall cannot catch that), so every grid lookup goes through GridCell/GridHeight below.
+function InGrid(grid, x, z)
+  if grid == nil or type(x) ~= "number" or type(z) ~= "number" then return false end
+  local ok, inside = pcall(function ()
+    local s = grid.GridScale
+    return x >= grid.OffsetX and z >= grid.OffsetZ and x < grid.OffsetX + grid.Width * s and z < grid.OffsetZ + grid.Height * s
+  end)
+  return ok and inside == true
+end
+
+function GridCell(grid, x, z)
+  if not InGrid(grid, x, z) then return nil end
+  return grid:GetCellInfo(x, z)
+end
+
+function GridHeight(grid, x, z)
+  if not InGrid(grid, x, z) then return nil end
+  return grid:GetHeight(x, z)
+end
+
 --- A binary min-heap for the grid searches (a linear scan for the cheapest open cell froze the game on long routes).
 function NewHeap()
   local h = { n = 0, items = {}, prio = {} }

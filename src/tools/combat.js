@@ -4,6 +4,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { tool, call, text, z, guid } from "../core.js";
+import { focus, focusBetween, wide, MEDIUM } from "../director.js";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // Combat log entries already shown; in a temp file too, like the dialogue mark, for one-shot CLI calls.
@@ -57,13 +58,16 @@ async function afterAction(apBefore) {
 /** Wait until it is the active character's turn again or combat ends (max ~50 s, under client timeouts). */
 async function waitForTurn() {
   const log = [];
-  let s;
+  let s, watching = null;
   for (let i = 0; i < 100; i++) {
     s = await state();
     log.push(...s.log);
     if (!s.in_combat || s.my_turn) break;
+    // Camera: follow whoever is acting (only if visible; the director checks).
+    if (s.active_guid && s.active_guid !== watching) { watching = s.active_guid; await focus(watching, MEDIUM); }
     await sleep(500);
   }
+  if (!s.in_combat) await wide(); else await focus(null, MEDIUM);
   s.log = log;
   return s;
 }
@@ -90,6 +94,7 @@ tool("dos2_attack", "Basic weapon attack on a target (walks into range if needed
   "returns the combat status.",
   { target: guid },
   async (a) => {
+    await focusBetween(a.target, MEDIUM);
     const r = await call("attack", a);
     return text(`Attacking ${r.attacking}\n` + show(await afterAction(r.ap_before)));
   });
@@ -99,6 +104,7 @@ tool("dos2_cast", "Use a memorised skill (id from dos2_skills) on a target GUID,
   { skill: z.string(), target: guid.optional(), x: z.number().optional(), z: z.number().optional() },
   async (a) => {
     if (a.target == null && (a.x == null || a.z == null)) throw new Error("Give a target GUID, or x and z");
+    if (a.target) await focusBetween(a.target, MEDIUM);
     const r = await call("cast", a);
     return text(`Casting ${r.casting}\n` + show(await afterAction(r.ap_before)));
   });
@@ -152,6 +158,7 @@ tool("dos2_use_on", "Throw or read an item from your inventory at a target GUID 
   { item: guid, target: guid.optional(), x: z.number().optional(), z: z.number().optional() },
   async (a) => {
     const before = await state();
+    if (a.target) await focusBetween(a.target, MEDIUM);
     const r = await call("use_item", a);
     const s = await afterAction(r.ap_before);
     const cast = s.log.some((e) => e.event === "cast" && e.skill === r.skill) ||

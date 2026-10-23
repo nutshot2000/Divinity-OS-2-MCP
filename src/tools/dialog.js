@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { tool, call, text, z, guid } from "../core.js";
 import { walkTo } from "./move.js";
+import { focusBetween, wide, CLOSE } from "../director.js";
 
 const DIALOG_UI = 14;
 const client = (cmd, args = {}) => call(cmd, args, 15000, "client");
@@ -81,6 +82,7 @@ tool("dos2_answer", "Choose a dialogue answer by its number from dos2_dialog. Re
       all.open = d.open;
       all.answers = d.answers;
     }
+    if (!all.open) await wide(); // conversation over: back to the exploring view
     return text(show(all));
   });
 
@@ -122,8 +124,10 @@ tool("dos2_talk", "Walk up to a character and start talking, as clicking on them
     await readDialog(); // drop anything older
     const m = await walkTo({ target: a.target });
     if (m.refused || m.hurt) return text(`Did not reach them: ${m.outcome}`);
+    await focusBetween(a.target, CLOSE); // close-up on both speakers
     const r = await call("talk", { target: a.target });
     const d = await settle();
+    if (!d.open && !d.lines.length) await wide();
     if (!d.open && !d.lines.length) return text(`${r.talking_to} did not start a conversation (nothing to say, or busy).`);
     return text(show(d));
   });

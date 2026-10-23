@@ -147,6 +147,16 @@ Read from the ositools source (`ScriptExtender/Lua`, `ScriptExtender/Extender`, 
 - Stairs/ladders/hatches put the server briefly out of the "Running" state; polls now retry through it and
   `dos2_use` reports the move ("now at x,z (moved N m)").
 
+## Camera and grid safety
+
+- The player's camera is `Ext.Client.GetCameraManager().Controllers["GameCamera_player0"]`: `TargetLookAt`,
+  `TargetCameraDistance` (clamped by the game to `MaxCameraDistance`, 19) and `Rotation` are writable and the game
+  eases toward them. `src/director.js` frames talks, attacks, enemy turns and looting; the server's `camera_point`
+  only allows visible objects or explored, on-map ground.
+- `AiGrid:GetCellInfo` / `GetHeight` crash the game for points outside the grid (pcall cannot catch it). Every
+  lookup goes through `GridCell` / `GridHeight` (Util.lua), which check `OffsetX/OffsetZ`, `Width/Height` and
+  `GridScale` first.
+
 ## Resolved early questions
 
 Loading the mod (pak via `Divine.exe`, `meta.lsx` with DE `PublishVersion`), Osiris calls from Tick (allowed), the

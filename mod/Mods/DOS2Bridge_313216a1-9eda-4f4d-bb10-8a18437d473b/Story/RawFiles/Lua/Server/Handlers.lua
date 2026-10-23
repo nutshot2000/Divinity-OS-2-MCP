@@ -138,7 +138,7 @@ function Handlers.move(args)
     Osi.CharacterMoveTo(me.MyGuid, args.target, running, event, 0)
   else
     local grid = Ext.Entity.GetAiGrid()
-    local y = (grid and grid:GetHeight(args.x, args.z)) or me.WorldPos[2]
+    local y = GridHeight(grid, args.x, args.z) or me.WorldPos[2]
     -- CharacterMoveToPosition(character, x, y, z, running, event)
     Osi.CharacterMoveToPosition(me.MyGuid, args.x, y, args.z, running, event)
   end
@@ -370,4 +370,26 @@ function Handlers.lua(args)
   local chunk, err = load("local _ENV = Mods.DOS2Bridge\n" .. args.code, "dos2_lua", "t")
   if chunk == nil then error(err) end
   return chunk()
+end
+
+--- Where the camera may look: a visible character or item, or explored ground (never into fog of war). Defaults to
+--- the acting character.
+function Handlers.camera_point(args)
+  local me = ActiveChar()
+  if args.target then
+    local o = GetChar(args.target) or GetItem(args.target)
+    if o == nil then error("No object with GUID " .. tostring(args.target)) end
+    if o.MyGuid ~= me.MyGuid and not CanSeeObject(me, o) then error((NameOf(o) or "That") .. " is not in sight") end
+    local p = Pos(o)
+    return { x = p.x, y = p.y, z = p.z }
+  end
+  if args.x and args.z then
+    local grid = Ext.Entity.GetAiGrid()
+    -- Off the map the fog-of-war query says "not shrouded"; require a real map cell as well.
+    if grid == nil or GridCell(grid, args.x, args.z) == nil then error("That spot is off the map") end
+    if Shrouded(args.x, args.z) then error("That spot is unexplored: the camera cannot look there") end
+    return { x = args.x, y = GridHeight(grid, args.x, args.z) or me.WorldPos[2], z = args.z }
+  end
+  local p = Pos(me)
+  return { x = p.x, y = p.y, z = p.z }
 end

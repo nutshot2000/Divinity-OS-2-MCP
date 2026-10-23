@@ -105,6 +105,13 @@ Tactics that matter:
   or lets them move alone.
 - `dos2_sneak on=true` / `on=false` – sneak or stand up (out of combat).
 
+## Camera
+
+The camera frames the action by itself (close-ups when talking, attacker and target in fights, following enemies on
+their turns, a closer look when opening things). You can also show the watcher something with
+`dos2_camera target=<GUID>` or `dos2_camera x=.. z=..`, zoom with `zoom=` (up to 19) and turn with `turn=<degrees>`.
+`dos2_camera reset=true` goes back to your character. Only things you can see can be shown.
+
 ## Saving
 
 The bridge cannot save. At milestones and before risky moments, ask the watching player to press F5.

@@ -226,3 +226,22 @@ function ClientHandlers.lua(args)
   if chunk == nil then error(err) end
   return chunk()
 end
+
+-- Camera: the player's game camera can be pointed, zoomed (within the game's own limit) and rotated. The server
+-- checks fair play first (only visible objects or explored ground), the client moves the camera.
+local function gameCamera()
+  local ok, cams = pcall(function () return Ext.Client.GetCameraManager().Controllers end)
+  if not ok or cams == nil then error("No game camera") end
+  local cam = cams["GameCamera_player0"]
+  if cam == nil then error("No game camera") end
+  return cam
+end
+
+function ClientHandlers.camera(args)
+  local cam = gameCamera()
+  if args.x and args.z then cam.TargetLookAt = { args.x, args.y or cam.TargetLookAt[2], args.z } end
+  if args.zoom then cam.TargetCameraDistance = args.zoom end
+  if args.rotation then cam.Rotation = args.rotation % 360 end
+  if args.turn then cam.Rotation = (cam.Rotation + args.turn) % 360 end
+  return { look_at = cam.TargetLookAt, zoom = cam.TargetCameraDistance, rotation = cam.Rotation }
+end

@@ -1,0 +1,39 @@
+// Camera director: frames the action for the person watching, without the playing model having to think about it.
+// Talking zooms in on both speakers, attacks and casts frame attacker and target, enemy turns follow whoever acts,
+// opening or reading something takes a closer look. Every move goes through the server's fair-play check (only
+// visible objects), and a camera problem never fails the tool that asked for it. DOS2_CINEMATIC=0 turns it off.
+import { call } from "./bridge.js";
+
+const ENABLED = process.env.DOS2_CINEMATIC !== "0";
+export const WIDE = 19;    // the game's maximum zoom-out: normal exploring view
+export const MEDIUM = 13;  // combat actions
+export const CLOSE = 9;    // conversations, looting, reading
+
+async function cameraAt(point, zoom) {
+  await call("camera", { ...point, zoom }, 5000, "client");
+}
+
+/** Frame one visible object (or the acting character when no target is given). */
+export async function focus(target, zoom = MEDIUM) {
+  if (!ENABLED) return;
+  try { await cameraAt(await call("camera_point", target ? { target } : {}, 5000), zoom); } catch { /* cosmetic */ }
+}
+
+/** Frame the acting character and a visible target together: the point halfway between them. */
+export async function focusBetween(target, zoom = MEDIUM) {
+  if (!ENABLED || !target) return;
+  try {
+    const me = await call("camera_point", {}, 5000);
+    const them = await call("camera_point", { target }, 5000);
+    // Pull out a little for targets far away, so both stay on screen.
+    const dist = Math.hypot(them.x - me.x, them.z - me.z);
+    await cameraAt({ x: (me.x + them.x) / 2, y: (me.y + them.y) / 2, z: (me.z + them.z) / 2 },
+      Math.min(WIDE, Math.max(zoom, dist * 0.9 + 4)));
+  } catch { /* cosmetic */ }
+}
+
+/** Back to the normal exploring view, centred on the acting character. */
+export async function wide() {
+  if (!ENABLED) return;
+  try { await cameraAt(await call("camera_point", {}, 5000), WIDE); } catch { /* cosmetic */ }
+}

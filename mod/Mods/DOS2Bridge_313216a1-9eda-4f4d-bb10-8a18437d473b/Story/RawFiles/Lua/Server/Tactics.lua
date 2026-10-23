@@ -20,7 +20,7 @@ end
 
 local function cellInfo(grid, x, z)
   if Shrouded(x, z) then return { unknown = true } end
-  local info = grid:GetCellInfo(x, z)
+  local info = GridCell(grid, x, z)
   if info == nil then return { blocked = true } end
   local c = { height = info.Height }
   if HasFlag(info.AiFlags, "MovementBlock") then c.blocked = true end
@@ -37,7 +37,7 @@ function Handlers.tactics(args)
   local p = Pos(me)
   local r = args.radius or 12
   local cx, cz = math.floor(p.x + 0.5), math.floor(p.z + 0.5)
-  local myHeight = grid:GetHeight(p.x, p.z) or p.y
+  local myHeight = GridHeight(grid, p.x, p.z) or p.y
   local ap = me.Stats.CurrentAP or 0
   -- Out of combat there is no AP to spend: preview what a fresh turn would allow, for planning before a fight.
   if Osiq("CharacterIsInCombat", me.MyGuid) ~= 1 then ap = me.Stats.APStart or 4 end
@@ -84,7 +84,7 @@ function Handlers.tactics(args)
       units[key] = enemy and "E" or "A"
       if enemy then
         enemies[#enemies + 1] = { name = NameOf(c) or "enemy", x = cp.x, z = cp.z, dist = Dist(p, cp),
-          height = Round((grid:GetHeight(cp.x, cp.z) or cp.y) - myHeight) }
+          height = Round((GridHeight(grid, cp.x, cp.z) or cp.y) - myHeight) }
       end
     end
   end
@@ -160,7 +160,7 @@ function Handlers.safe_path(args)
   local sx, sz = math.floor(p.x + 0.5), math.floor(p.z + 0.5)
   local gx, gz = math.floor(args.x + 0.5), math.floor(args.z + 0.5)
   -- The AI grid keeps one height per cell; on stacked decks the character may be on a floor above or below it.
-  local here = grid:GetHeight(p.x, p.z)
+  local here = GridHeight(grid, p.x, p.z)
   if here == nil or math.abs(here - p.y) > 1.5 then
     return { error = "multi-level: the grid describes another floor here, so no route can be planned" }
   end

@@ -10,7 +10,7 @@ local LEGEND = {
 
 local function cellChar(grid, x, z)
   if Shrouded(x, z) then return "?" end  -- fog of war: the player has not seen it
-  local info = grid:GetCellInfo(x, z)
+  local info = GridCell(grid, x, z)
   if info == nil then return " " end
   for _, entry in ipairs(LEGEND) do
     if HasFlag(info.AiFlags, entry[1]) then return entry[2] end
