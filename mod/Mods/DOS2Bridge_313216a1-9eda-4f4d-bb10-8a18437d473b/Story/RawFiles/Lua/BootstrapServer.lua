@@ -27,12 +27,23 @@ local function respond(seq, ok, value)
   Ext.IO.SaveFile(RESPONSE, text)
 end
 
+--- True only when the game is fully running and Osiris can be called. Calling an Osiris function while a save is
+--- loading crashes the game outright (LookupOsiFunction), and pcall cannot catch that, so nothing touches the
+--- engine until this says yes.
+local function gameReady()
+  local okCall, callable = pcall(Ext.Osiris.IsCallable)
+  if not okCall or not callable then return false end
+  local okState, state = pcall(Ext.Server.GetGameState)
+  return okState and tostring(state) == "Running"
+end
+
 local function poll()
   local raw = Ext.IO.LoadFile(REQUEST)
   if raw == nil or raw == "" then return end
   local okParse, req = pcall(Ext.Json.Parse, raw)
   if not okParse or type(req) ~= "table" or req.seq == nil or req.seq == lastSeq then return end
   lastSeq = req.seq
+  if not gameReady() then return respond(req.seq, false, "The game is loading or not running yet: try again in a moment") end
   local handler = Handlers[req.cmd]
   if handler == nil then return respond(req.seq, false, "Unknown command: " .. tostring(req.cmd)) end
   respond(req.seq, xpcall(handler, debug.traceback, req.args or {}))
@@ -45,7 +56,9 @@ Ext.Events.Tick:Subscribe(function ()
     if not ok then Ext.Utils.PrintError("[DOS2Bridge] poll failed: " .. tostring(err)) end
   end
   if tick % BEAT_EVERY == 0 then
-    pcall(Ext.IO.SaveFile, HEARTBEAT, Ext.Json.Stringify({ tick = tick, level = CurrentLevelName() }, { Beautify = false }))
+    local ready = gameReady()
+    pcall(Ext.IO.SaveFile, HEARTBEAT, Ext.Json.Stringify({ tick = tick, ready = ready,
+      level = ready and CurrentLevelName() or nil }, { Beautify = false }))
   end
 end)
 

@@ -21,6 +21,16 @@ This file is sent to the model as the server's instructions; `dos2_help` returns
    alone; taking them would be stealing.
 7. Narrate with `dos2_say` before anything the watcher would want explained: a decision, a plan, a reaction.
 
+## Explore before you leave
+
+Play like a curious first-timer, not a speedrunner. Before following the quest marker onward, and above all before an
+exit that may end the area (boats, "leave this deck?" ladders, level transitions):
+
+- Enter every room you can reach: `dos2_grid` shows unexplored `?` and doors `d`.
+- Open every container and loot every body (`dos2_use` + `dos2_loot`); read notes and books.
+- Talk to everyone who will talk; come back to people after events, they may say new things.
+- Try locked doors and note them; look for keys and levers.
+
 ## Combat
 
 Turn-based. `dos2_combat` shows whose turn it is, your AP, and every combatant you can see. On your turn:
