@@ -6,6 +6,7 @@ import "./tools/observe.js";
 import "./tools/move.js";
 import "./tools/loot.js";
 import "./tools/dialog.js";
+import "./tools/combat.js";
 import "./tools/misc.js";
 
 const transport = new StdioServerTransport();

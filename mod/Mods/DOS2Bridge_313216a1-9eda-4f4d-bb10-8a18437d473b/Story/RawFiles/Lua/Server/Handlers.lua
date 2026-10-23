@@ -81,6 +81,10 @@ local function inSight(me, obj)
   return not HasFlag(hit, "VisionBlock")
 end
 
+-- Shared with Combat.lua.
+CharacterTags = characterTags
+CanSeeObject = inSight
+
 function Handlers.look(args)
   local me = ActiveChar()
   local from = Pos(me)

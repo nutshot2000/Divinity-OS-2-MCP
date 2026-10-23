@@ -119,6 +119,11 @@ Read from the ositools source (`ScriptExtender/Lua`, `ScriptExtender/Extender`, 
   invoke. Answering = `ExternalInterfaceCall("QuestionPressed", index)`, the call a click makes. Starting a talk =
   raising the Osiris event `DialogStartRequested(npc, player)` (what a click raises; NPCs like Siwan have no
   `DB_Dialogs` row). Array names came from the strings in `Public/Game/GUI/dialog.swf` (Game.pak).
+- **Combat (built, untested in a fight):** `Server/Combat.lua`. Turn order from
+  `Ext.Entity.GetCombat(id):GetCurrentTurnOrder()`, active turn from `CombatGetActiveEntity`, skills from
+  `SkillManager.Skills` + `Ext.Stats.Get`, actions via `CharacterAttack`, `CharacterUseSkill(..., 0, 0, 0)` /
+  `CharacterUseSkillAtPosition`, `EndTurn`. A small log from `SkillCast`, `CharacterDied`, `ObjectTurnStarted`,
+  `CombatEnded`. Skill descriptions still show `[1]` placeholders.
 - **Loot (done):** server-side; contents only for an opened container within 3 m; owned items skipped.
 - **Menu mouse input:** after a restart the main menu ignored mouse clicks (keyboard worked). A global `UICall` hook
   was suspected and is now limited to the dialogue screen; not confirmed either way.

@@ -21,6 +21,17 @@ This file is sent to the model as the server's instructions; `dos2_help` returns
    alone; taking them would be stealing.
 7. Narrate with `dos2_say` before anything the watcher would want explained: a decision, a plan, a reaction.
 
+## Combat
+
+Turn-based. `dos2_combat` shows whose turn it is, your AP, and every combatant you can see. On your turn:
+
+1. Check `dos2_skills` (AP cost, cooldown, range, area) and the enemies' armour: physical damage needs physical
+   armour gone before knockdowns land, magic needs magic armour gone.
+2. Act with `dos2_attack`, `dos2_cast` (target GUID or ground x,z) or `dos2_move` (costs AP). Each returns the new
+   state once the action lands.
+3. Mind surfaces in `dos2_grid` (fire, poison, oil, water) and your allies before area skills.
+4. `dos2_end_turn` when out of useful AP; it waits through the enemies' turns. Narrate the plan with `dos2_say`.
+
 ## Cost
 
 Text tools are cheap; `dos2_screenshot` is expensive. Take a picture only for things the text cannot show
