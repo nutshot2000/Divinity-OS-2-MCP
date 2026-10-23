@@ -13,8 +13,9 @@ let logUpTo = (() => { try { return Number(readFileSync(MARK, "utf8")) || 0; } c
 const hpText = (f) => `${f.hp}/${f.max_hp} HP` + (f.armor ? `, ${f.armor} armour` : "") + (f.magic_armor ? `, ${f.magic_armor} magic armour` : "");
 
 function show(s) {
-  // Collapse repeats: the engine raises ObjectTurnStarted more than once per turn.
-  const log = s.log.filter((e, i, all) => i === 0 || e.event !== all[i - 1].event || e.who !== all[i - 1].who || e.skill !== all[i - 1].skill).map((e) => e.event === "cast" ? `${e.who} cast ${e.skill}` : e.event === "died" ? `${e.who} died`
+  // The engine raises ObjectTurnStarted repeatedly; keep casts and deaths, and only the latest turn line.
+  const lastTurn = s.log.map((e) => e.event).lastIndexOf("turn");
+  const log = s.log.filter((e, i) => e.event !== "turn" || i === lastTurn).map((e) => e.event === "cast" ? `${e.who} cast ${e.skill}` : e.event === "died" ? `${e.who} died`
     : e.event === "turn" ? `-- ${e.who}'s turn` : e.event).join("\n");
   logUpTo = s.log_last;
   try { writeFileSync(MARK, String(logUpTo)); } catch { /* best effort */ }

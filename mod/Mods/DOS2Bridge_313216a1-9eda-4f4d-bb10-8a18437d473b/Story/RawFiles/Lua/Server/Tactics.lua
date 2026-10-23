@@ -52,15 +52,11 @@ function Handlers.tactics(args)
 
   -- Walking distance from the character's cell (8 directions, diagonals cost 1.41).
   local dist = { ["0,0"] = 0 }
-  local frontier = { { 0, 0 } }
-  while #frontier > 0 do
-    local best, bi = nil, nil
-    for i, f in ipairs(frontier) do
-      local d = dist[f[1] .. "," .. f[2]]
-      if best == nil or d < best then best, bi = d, i end
-    end
-    local cur = table.remove(frontier, bi)
-    local here = cells[cur[1] .. "," .. cur[2]]
+  local frontier = NewHeap()
+  frontier.push({ 0, 0 }, 0)
+  while frontier.n > 0 do
+    local cur, best = frontier.pop()
+    local here = best <= dist[cur[1] .. "," .. cur[2]] and cells[cur[1] .. "," .. cur[2]] or nil  -- nil: stale entry
     for _, step in ipairs({ { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 }, { 1, 1 }, { 1, -1 }, { -1, 1 }, { -1, -1 } }) do
       local nx, nz = cur[1] + step[1], cur[2] + step[2]
       local key = nx .. "," .. nz
@@ -70,7 +66,7 @@ function Handlers.tactics(args)
         local nd = best + ((step[1] ~= 0 and step[2] ~= 0) and 1.41 or 1)
         if nd <= reach + 0.01 and (dist[key] == nil or nd < dist[key]) then
           dist[key] = nd
-          frontier[#frontier + 1] = { nx, nz }
+          frontier.push({ nx, nz }, nd)
         end
       end
     end
@@ -197,29 +193,26 @@ function Handlers.safe_path(args)
 
   local start = sx .. "," .. sz
   local dist, prev = { [start] = 0 }, {}
-  local open = { { sx, sz } }
+  local open = NewHeap()
+  open.push({ sx, sz }, 0)
   local goalKey = gx .. "," .. gz
-  while #open > 0 do
-    local bi, best = 1, dist[open[1][1] .. "," .. open[1][2]]
-    for i = 2, #open do
-      local d = dist[open[i][1] .. "," .. open[i][2]]
-      if d < best then bi, best = i, d end
-    end
-    local cur = table.remove(open, bi)
+  while open.n > 0 do
+    local cur, best = open.pop()
     local ck = cur[1] .. "," .. cur[2]
     if ck == goalKey then break end
-    local here = cell(cur[1], cur[2])
+    -- A cell can be queued more than once; only expand it at its best distance.
+    local here = best <= dist[ck] and cell(cur[1], cur[2]) or nil
     for _, s in ipairs({ { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 }, { 1, 1 }, { 1, -1 }, { -1, 1 }, { -1, -1 } }) do
       local nx, nz = cur[1] + s[1], cur[2] + s[2]
       if nx >= minX and nx <= maxX and nz >= minZ and nz <= maxZ then
-        local c = cell(nx, nz)
-        local hh = here and here.height or c and c.height
-        if free(c) and hh and math.abs(c.height - hh) <= STEP_UP then
+        local c = here and cell(nx, nz)
+        local hh = here and (here.height or c and c.height)
+        if c and free(c) and hh and math.abs(c.height - hh) <= STEP_UP then
           local nk = nx .. "," .. nz
           local nd = best + ((s[1] ~= 0 and s[2] ~= 0) and 1.41 or 1)
           if dist[nk] == nil or nd < dist[nk] then
             dist[nk], prev[nk] = nd, ck
-            open[#open + 1] = { nx, nz }
+            open.push({ nx, nz }, nd)
           end
         end
       end

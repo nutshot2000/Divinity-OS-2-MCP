@@ -58,7 +58,8 @@ end
 DialogSnapshots = DialogSnapshots or {}
 local function snapshotDialog(ui)
   local root = ui:GetRoot()
-  DialogSnapshots[#DialogSnapshots + 1] = { seq = DialogLogSeq, text = flashArray(root, "addTextArray"),
+  -- seq of the updateDialog entry about to be logged, so a read "since" the previous last position includes it
+  DialogSnapshots[#DialogSnapshots + 1] = { seq = DialogLogSeq + 1, text = flashArray(root, "addTextArray"),
     answers = flashArray(root, "addAHArray"), keywords = flashArray(root, "addKWAnswerArray") }
   if #DialogSnapshots > 50 then table.remove(DialogSnapshots, 1) end
 end

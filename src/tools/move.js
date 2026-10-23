@@ -5,13 +5,16 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** Poll the mod until the move with this event finishes, stalls or times out. Stops early when the character starts
  *  taking damage (walking into fire, a trap, an attack), so a bad route costs as little as possible. */
-async function waitForMove(event, timeoutMs, startHp, startedInCombat = false) {
+async function waitForMove(event, timeoutMs, startHp, startedInCombat = false, startStatuses = []) {
   const deadline = Date.now() + timeoutMs;
   let last = null, stillSince = Date.now();
   while (Date.now() < deadline) {
     await sleep(400);
     const s = await call("move_status", { event });
-    if (startHp != null && s.hp < startHp) {
+    // Stop for fresh harm (a new status such as BURNING, or a real hit), not for poison or bleeding that was already
+    // ticking before the move started.
+    const newStatus = s.statuses.some((st) => !startStatuses.includes(st) && /BURNING|POISONED|BLEEDING|ACID|ELECTRIFIED|SHOCKED|FROZEN|NECROFIRE|SUFFOCATING|HIT/.test(st));
+    if (startHp != null && s.hp < startHp && (newStatus || startHp - s.hp >= 5)) {
       await call("move", { x: s.x, z: s.z, run: false }); // stand still where we are
       return { outcome: `stopped: took ${startHp - s.hp} damage on the way (${s.statuses.join(", ")})`, hurt: true, ...s };
     }
@@ -44,12 +47,13 @@ export async function walkTo({ x, z, target, run = true, timeoutMs = 30000, allo
   }
   const deadline = Date.now() + timeoutMs;
   const legs = route?.waypoints ?? [{ x, z, direct: true }];
-  let r = { outcome: "already there" };
+  if (legs.length === 0) return { outcome: "arrived", ...before }; // already standing on the goal cell
+  let r = null;
   for (const w of legs) {
     const { event } = target != null && (w === legs[legs.length - 1]) && route == null
       ? await call("move", { target, run })
       : await call("move", { x: w.x, z: w.z, run });
-    r = await waitForMove(event, Math.max(2000, deadline - Date.now()), startHp, before.in_combat);
+    r = await waitForMove(event, Math.max(2000, deadline - Date.now()), startHp, before.in_combat, before.statuses);
     if (r.outcome !== "arrived") break;
   }
   return r;

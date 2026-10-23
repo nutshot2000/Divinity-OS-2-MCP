@@ -129,7 +129,8 @@ local moveSeq = 0
 function Handlers.move(args)
   local me = ActiveChar()
   moveSeq = moveSeq + 1
-  local event = "DOS2Bridge_move_" .. moveSeq
+  -- The clock part keeps names unique across hot reloads (which reset moveSeq), so a stale arrival cannot match.
+  local event = "DOS2Bridge_move_" .. Ext.Utils.MonotonicTime() .. "_" .. moveSeq
   Arrivals[event] = nil
   local running = args.run and 1 or 0
   if args.target then
@@ -293,22 +294,28 @@ end
 --- description. Unidentified items stay unidentified.
 function Handlers.inventory()
   local me = ActiveChar()
+  -- Ask the game what is in each equipment slot (an item's Slot field is also its bag position when carried).
+  local equipped = {}
+  for _, slot in ipairs({ "Helmet", "Breast", "Leggings", "Weapon", "Shield", "Ring", "Belt", "Boots", "Gloves",
+      "Amulet", "Ring2", "Wings", "Horns", "Overhead" }) do
+    local g = Osiq("CharacterGetEquippedItem", me.MyGuid, slot)
+    if g ~= nil and g ~= "" then equipped[BareGuid(g)] = true end
+  end
   local out = {}
   for _, g in ipairs(me:GetInventoryItems() or {}) do
     local it = GetItem(g)
     if it then
       local stats = it.StatsId
-      local desc, kind = nil, nil
+      local desc = nil
       local ok, st = pcall(Ext.Stats.Get, stats, nil, false)
       if ok and st then
-        kind = st.ItemGroup ~= "" and st.ItemGroup or nil
         local okd, d = pcall(function () return Ext.L10N.GetTranslatedStringFromKey(st.Description) end)
         if okd and d ~= "" then desc = d end
       end
       local identified = true
       pcall(function () identified = it.Stats == nil or it.Stats.IsIdentified ~= 0 end)
       out[#out + 1] = { name = NameOf(it) or stats, guid = it.MyGuid, amount = it.Amount or 1,
-        equipped = it.Slot ~= nil and it.Slot < 14, stats = identified and stats or "(unidentified)",
+        equipped = equipped[BareGuid(it.MyGuid)] == true, stats = identified and stats or "(unidentified)",
         description = identified and desc or nil }
     end
   end

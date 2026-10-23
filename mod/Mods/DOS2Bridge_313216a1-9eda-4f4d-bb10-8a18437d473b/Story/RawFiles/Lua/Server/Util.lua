@@ -86,6 +86,42 @@ function ActiveChar()
   return c
 end
 
+--- A binary min-heap for the grid searches (a linear scan for the cheapest open cell froze the game on long routes).
+function NewHeap()
+  local h = { n = 0, items = {}, prio = {} }
+  function h.push(item, p)
+    h.n = h.n + 1
+    local i = h.n
+    h.items[i], h.prio[i] = item, p
+    while i > 1 do
+      local parent = i // 2
+      if h.prio[parent] <= h.prio[i] then break end
+      h.items[i], h.items[parent] = h.items[parent], h.items[i]
+      h.prio[i], h.prio[parent] = h.prio[parent], h.prio[i]
+      i = parent
+    end
+  end
+  function h.pop()
+    if h.n == 0 then return nil end
+    local item, p = h.items[1], h.prio[1]
+    h.items[1], h.prio[1] = h.items[h.n], h.prio[h.n]
+    h.items[h.n], h.prio[h.n] = nil, nil
+    h.n = h.n - 1
+    local i = 1
+    while true do
+      local l, r, m = i * 2, i * 2 + 1, i
+      if l <= h.n and h.prio[l] < h.prio[m] then m = l end
+      if r <= h.n and h.prio[r] < h.prio[m] then m = r end
+      if m == i then break end
+      h.items[i], h.items[m] = h.items[m], h.items[i]
+      h.prio[i], h.prio[m] = h.prio[m], h.prio[i]
+      i = m
+    end
+    return item, p
+  end
+  return h
+end
+
 --- True if an engine flag set (list of names, name->bool table or bitfield userdata) contains name.
 function HasFlag(flags, name)
   if flags == nil then return false end

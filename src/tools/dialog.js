@@ -46,10 +46,17 @@ function show(d) {
     (d.open ? `\n\nanswers:\n${d.answers.map((a, i) => `  ${i}. ${a}`).join("\n") || "  (none yet)"}` : "\n\n(dialogue ended)");
 }
 
-/** Wait a moment for the screen to update after an action, then read it. */
+/** Wait for the screen to update after an action, then read it. The next line can take a few seconds (voice,
+ *  animation), so keep checking until new lines arrive or the dialogue closes. */
 async function settle() {
-  await sleep(1500);
-  return readDialog();
+  await sleep(1200);
+  let d = await readDialog();
+  for (let i = 0; i < 6 && d.open && !d.lines.length && !d.answers.length; i++) {
+    await sleep(700);
+    const more = await readDialog();
+    d = { open: more.open, lines: more.lines, answers: more.answers };
+  }
+  return d;
 }
 
 tool("dos2_dialog", "Read the open dialogue: lines spoken since the last read and the numbered answers you can give.",

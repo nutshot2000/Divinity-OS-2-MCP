@@ -111,7 +111,8 @@ function Handlers.level_up(args)
   elseif kind == "combat" or kind == "civil" then
     local list = kind == "combat" and COMBAT_ABILITIES or CIVIL_ABILITIES
     if not listHas(list, name) then error("Unknown " .. kind .. " ability " .. tostring(name)) end
-    local pts = kind == "combat" and Osiq("CharacterGetAbilityPoints", g) or Osiq("CharacterGetCivilAbilityPoints", g)
+    local pts
+    if kind == "combat" then pts = Osiq("CharacterGetAbilityPoints", g) else pts = Osiq("CharacterGetCivilAbilityPoints", g) end
     if (pts or 0) < 1 then error("No " .. kind .. " ability points to spend") end
     local cap = kind == "combat" and Ext.ExtraData.CombatAbilityCap or Ext.ExtraData.CivilAbilityCap
     if (Osiq("CharacterGetBaseAbility", g, name) or 0) >= cap then error(name .. " is at its cap") end
