@@ -32,6 +32,20 @@ tool("dos2_screenshot", "Capture the game window as an image. Costly: use dos2_l
     return { content: [{ type: "text", text: json(metadata) }, image] };
   });
 
+tool("dos2_minimap", "What the minimap in the corner shows: the people marked on it (also behind walls, as the " +
+  "minimap draws them) with name, GUID, position and distance. Use it to find who is around before dos2_look, " +
+  "which only lists what is in line of sight.",
+  {}, async () => {
+    const icons = await call("minimap", {}, 5000, "client");
+    const me = icons.find((i) => i.kind === "you");
+    const r1 = (v) => Math.round(v * 10) / 10;
+    const lines = icons.filter((i) => i.kind !== "you" && i.name).map((i) => `  ${i.kind}: ${i.name} [${i.guid}] at ` +
+      `${r1(i.x)},${r1(i.z)}` + (me ? `, ${r1(Math.hypot(i.x - me.x, i.z - me.z))}m away` : ""));
+    const other = icons.filter((i) => i.kind !== "you" && !i.name).length;
+    return text((lines.join("\n") || "  nobody marked") + (other ? `\n  (${other} other marker${other > 1 ? "s" : ""} without a name)` : "") +
+      (me ? `\nyou: ${r1(me.x)},${r1(me.z)}` : ""));
+  });
+
 tool("dos2_camera", "Move the game camera for the watcher: point it at a visible character or item (target) or at " +
   "explored ground (x,z), zoom (metres, the game allows up to about 19), set rotation (degrees) or turn (degrees, " +
   "relative). reset=true points it back at your character. It follows your character again once they move.",

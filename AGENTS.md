@@ -9,7 +9,8 @@ through this bridge, and how to work on the bridge itself. Read the rules first:
 
 - Learn what is in a chest, barrel or body by opening it, never before.
 - Only what is in sight counts. Things behind walls, under fog of war or hidden by perception are not yours to know.
-  The tools filter for this; never work around them.
+  The tools filter for this; never work around them. What the game's own HUD draws counts as seen: the minimap marks
+  people nearby even behind walls, so `dos2_minimap` may list them.
 - No teleporting, spawning items, editing stats or reading story flags. `dos2_lua` is for debugging the bridge, is
   off unless `DOS2_DEV=1`, and is never used for play.
 - If a tool shows something a player could not see, say so, ignore it, and report it as a bridge bug.

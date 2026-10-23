@@ -172,3 +172,14 @@ names by the extender; north is +z) and DX11 window capture (PrintWindow works i
 - Skill tooltips still show `[1]` placeholders instead of damage numbers.
 - The AI grid holds one height per cell, so route planning is unreliable on stacked decks (falls back to the game's
   pathing there).
+
+## Minimap (UI type 30)
+
+Before each full redraw the game invokes `update(false)` on the minimap after filling `map_mc.add_icons` with groups
+of five numbers: the object's handle bit-cast to a double, icon type, x and y on the map, and rotation. The client
+unpacks the handle (`string.pack("<d")` then `string.unpack("<i8")`, then `Ext.Utils.IntegerToHandle`) and resolves
+it with `Ext.Entity.GetGameObject` for name, GUID and position. Types seen: 11 = the player, 3 = a person nearby
+(drawn even behind walls), 12 = a marker with no object behind it (meaning unknown). `update(true)` sends only the
+player and type 12. `add_dirs` (rim arrows) has stayed empty so far. The swf names further icon classes
+(QuestMarker, ExclamationMark, Waypoint, Teleport, Enemy, Friendly, Flag, SecretMarker) whose type numbers are
+still to be matched.

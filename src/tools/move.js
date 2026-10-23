@@ -140,8 +140,16 @@ tool("dos2_use", "Use an item with the active character: open a container or doo
     const after = await poll("move_status", { event: "" });
     const moved = Math.hypot(after.x - before.x, after.z - before.z);
     if (moved > 3) return text(`${started.using}: used - now at ${after.x},${after.z} (moved ${Math.round(moved)}m). Look around with dos2_look.`);
+    // An opened container: say what the loot window showed, so taking it is one dos2_loot call.
+    let contents = "";
+    if (s.opened) {
+      const r = await call("loot_list", { container: started.guid }).catch(() => null);
+      if (r) contents = `\ninside:\n${r.items.map((i) => `  ${i.name}${i.amount > 1 ? ` x${i.amount}` : ""} [${i.guid}]` +
+        (i.owned_by ? ` (owned by ${i.owned_by})` : "")).join("\n") || "  nothing"}` +
+        (r.items.length ? `\nTake with dos2_loot container=${started.guid} take="all".` : "");
+    }
     return text(`${started.using}: ${outcome}` + (s.opened ? ", now open" : "") +
-      (s.dist != null ? ` (${s.dist}m away)` : ""));
+      (s.dist != null ? ` (${s.dist}m away)` : "") + contents);
   });
 
 tool("dos2_say", "Narrate: show a short line of overhead text on the active character so the watching player knows " +

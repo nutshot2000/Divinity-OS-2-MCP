@@ -28,13 +28,15 @@ watching. This file is sent to you as the server's instructions; `dos2_help` ret
 ## Exploring (the main loop)
 
 1. `dos2_look` – people and items in sight, nearest first, with GUIDs and tags (enemy, container, locked, dead).
-2. `dos2_grid` – a map: `#` wall, `.` floor, `d` door, `?` not explored yet, `f` fire, `p` poison, `o` oil.
-3. Pick ONE thing and do it:
+2. `dos2_minimap` – the people marked on the minimap, also behind walls: who is around to talk to.
+3. `dos2_grid` – a map: `#` wall, `.` floor, `d` door, `?` not explored yet, `f` fire, `p` poison, `o` oil.
+4. Pick ONE thing and do it:
    - walk: `dos2_move x=.. z=..` or `dos2_move target=<GUID>`
-   - open / use / climb: `dos2_use item=<GUID>` (walks there first)
+   - open / use / climb: `dos2_use item=<GUID>` (walks there first; an opened container's contents are listed,
+     take them with `dos2_loot container=<GUID> take="all"`)
    - talk: `dos2_talk target=<GUID>`
-4. Before you act, say what you are doing with `dos2_say text="..."` (short, in character).
-5. Read the result:
+5. Before you act, say what you are doing with `dos2_say text="..."` (short, in character).
+6. Read the result:
    - "arrived" – done.
    - "stopped: took N damage" – you walked into something harmful; look around and pick another way.
    - "not moving: every route crosses fire..." – wait for the fire to burn out, or go somewhere else.

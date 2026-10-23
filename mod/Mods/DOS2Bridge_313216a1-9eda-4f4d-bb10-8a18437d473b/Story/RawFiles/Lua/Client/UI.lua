@@ -245,3 +245,43 @@ function ClientHandlers.camera(args)
   if args.turn then cam.Rotation = (cam.Rotation + args.turn) % 360 end
   return { look_at = cam.TargetLookAt, zoom = cam.TargetCameraDistance, rotation = cam.Rotation }
 end
+
+-- Minimap (UI type 30): what the player sees on it. Before each full redraw ("update" with false) the game fills
+-- map_mc's add_icons with groups of five numbers: the object's handle (bit-cast to a double), icon type, x, y, and the
+-- icon's rotation. Seen so far: type 11 = you, 3 = a person nearby (shown even behind walls, as the minimap does).
+-- Only what the minimap draws is kept, so nothing here goes beyond what the player can see on screen.
+local MINIMAP_UI = 30
+local ICON_KIND = { [3] = "person", [11] = "you" }
+MinimapIcons = MinimapIcons or {}
+
+local function recordMinimap(e)
+  if e.When ~= "Before" or e.Function ~= "update" or e.Args[1] ~= false or e.UI:GetTypeId() ~= MINIMAP_UI then return end
+  local a = e.UI:GetRoot().add_icons
+  if a == nil then return end
+  local icons = {}
+  for i = 0, a.length - 5, 5 do
+    local handle = string.unpack("<i8", string.pack("<d", a[i]))
+    icons[#icons + 1] = { handle = handle, type = a[i + 1], x = a[i + 2], y = a[i + 3] }
+  end
+  MinimapIcons = icons
+end
+subscribe(Ext.Events.UIInvoke, function (e) pcall(recordMinimap, e) end)
+
+--- The minimap's icons with the object each one stands for: name, GUID and position.
+function ClientHandlers.minimap()
+  local out = {}
+  for _, icon in ipairs(MinimapIcons) do
+    local entry = { kind = ICON_KIND[icon.type] or ("marker type " .. tostring(icon.type)) }
+    if icon.handle ~= 0 then
+      local obj = nil
+      pcall(function () obj = Ext.Entity.GetGameObject(Ext.Utils.IntegerToHandle(icon.handle)) end)
+      if obj then
+        pcall(function () entry.name = obj.DisplayName end)
+        pcall(function () entry.guid = obj.MyGuid end)
+        pcall(function () local p = obj.WorldPos; entry.x, entry.y, entry.z = p[1], p[2], p[3] end)
+      end
+    end
+    out[#out + 1] = entry
+  end
+  return out
+end

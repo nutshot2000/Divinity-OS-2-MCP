@@ -43,12 +43,12 @@ following whoever acts on enemy turns, a closer look at chests and books, and th
 Tips: use **borderless window** mode (fullscreen minimises when it loses focus). Set `DOS2_DATA_DIR` if the game's
 `Osiris Data` folder is not under `Documents` or `OneDrive\Documents`.
 
-## Tools (31)
+## Tools (32)
 
 | Area | Tools |
 |--|--|
-| Status and senses | `dos2_ping`, `dos2_status`, `dos2_look`, `dos2_grid`, `dos2_screenshot` |
-| Moving and using | `dos2_move` (avoids fire/poison, stops on damage), `dos2_use` (also reads notes and books, takes stairs), `dos2_msgbox`, `dos2_say` |
+| Status and senses | `dos2_ping`, `dos2_status`, `dos2_look`, `dos2_minimap` (people marked on the minimap), `dos2_grid`, `dos2_screenshot` |
+| Moving and using | `dos2_move` (avoids fire/poison, stops on damage), `dos2_use` (also reads notes and books, lists what an opened container holds, takes stairs), `dos2_msgbox`, `dos2_say` |
 | Talking | `dos2_talk`, `dos2_dialog`, `dos2_answer` |
 | Items | `dos2_loot` (containers and bodies), `dos2_inventory`, `dos2_equip` |
 | Combat | `dos2_combat`, `dos2_tactics`, `dos2_skills`, `dos2_attack`, `dos2_cast`, `dos2_preview`, `dos2_use_on`, `dos2_end_turn`, `dos2_wait_turn` |
