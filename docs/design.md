@@ -183,3 +183,9 @@ it with `Ext.Entity.GetGameObject` for name, GUID and position. Types seen: 11 =
 player and type 12. `add_dirs` (rim arrows) has stayed empty so far. The swf names further icon classes
 (QuestMarker, ExclamationMark, Waypoint, Teleport, Enemy, Friendly, Flag, SecretMarker) whose type numbers are
 still to be matched.
+
+Unnamed minimap markers (type 12, handle 0) are stairs and other exits: the one on the tutorial ship sits on the
+stairs. Their minimap x,y are screen units that rotate with the camera and change scale, always as a rotation plus a
+scale with the y axis flipped. One named icon (known ground offset v, minimap offset w) fixes it: K = w / conj(v) as
+complex numbers, and a marker m is on the ground at conj(m / K) from the player. `dos2_minimap` does this; it is
+accurate to about 0.3 m and needs one other person on the minimap.

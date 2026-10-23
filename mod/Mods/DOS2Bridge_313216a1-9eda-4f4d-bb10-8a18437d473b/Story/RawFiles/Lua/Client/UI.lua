@@ -274,7 +274,7 @@ subscribe(Ext.Events.UIInvoke, function (e) pcall(recordMinimap, e) end)
 function ClientHandlers.minimap()
   local out = {}
   for _, icon in ipairs(MinimapIcons) do
-    local entry = { kind = ICON_KIND[icon.type] or ("marker type " .. tostring(icon.type)) }
+    local entry = { kind = ICON_KIND[icon.type] or ("marker type " .. tostring(icon.type)), mx = icon.x, my = icon.y }
     if icon.handle ~= 0 then
       local obj = nil
       pcall(function () obj = Ext.Entity.GetGameObject(Ext.Utils.IntegerToHandle(icon.handle)) end)

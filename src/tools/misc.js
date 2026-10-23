@@ -41,8 +41,21 @@ tool("dos2_minimap", "What the minimap in the corner shows: the people marked on
     const r1 = (v) => Math.round(v * 10) / 10;
     const lines = icons.filter((i) => i.kind !== "you" && i.name).map((i) => `  ${i.kind}: ${i.name} [${i.guid}] at ` +
       `${r1(i.x)},${r1(i.z)}` + (me ? `, ${r1(Math.hypot(i.x - me.x, i.z - me.z))}m away` : ""));
-    const other = icons.filter((i) => i.kind !== "you" && !i.name).length;
-    return text((lines.join("\n") || "  nobody marked") + (other ? `\n  (${other} other marker${other > 1 ? "s" : ""} without a name)` : "") +
+    // Markers with no character behind them (stairs and other exits) only have minimap coordinates. The minimap turns
+    // with the camera and changes scale, but it is always a rotation plus a scale (y axis flipped), which one person
+    // with a known position pins down: K = their minimap offset / conj(their offset on the ground).
+    const anchor = me && icons.find((i) => i.kind !== "you" && i.name && i.mx != null);
+    const marks = icons.filter((i) => i.kind !== "you" && !i.name).map((i) => {
+      if (!anchor) return "  marker without a name (position unknown: no one else on the minimap to measure by)";
+      const vx = anchor.x - me.x, vz = anchor.z - me.z; // the anchor's offset on the ground
+      const d2 = vx * vx + vz * vz;
+      if (d2 < 1) return "  marker without a name (position unknown: the person marked is standing on you)";
+      const kr = (anchor.mx * vx - anchor.my * vz) / d2, ki = (anchor.my * vx + anchor.mx * vz) / d2;
+      const k2 = kr * kr + ki * ki;
+      const ur = (i.mx * kr + i.my * ki) / k2, ui = (i.my * kr - i.mx * ki) / k2;
+      return `  marker (stairs or an exit, no name) at about ${r1(me.x + ur)},${r1(me.z - ui)}`;
+    });
+    return text((lines.join("\n") || "  nobody marked") + (marks.length ? "\n" + marks.join("\n") : "") +
       (me ? `\nyou: ${r1(me.x)},${r1(me.z)}` : ""));
   });
 
