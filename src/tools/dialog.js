@@ -83,6 +83,8 @@ tool("dos2_answer", "Choose a dialogue answer by its number from dos2_dialog. Re
       all.answers = d.answers;
     }
     if (!all.open) await wide(); // conversation over: back to the exploring view
+    // Choosing "(end)" closes the dialogue with nothing more said.
+    if (!all.open && !all.lines.length) return text("The conversation is over.");
     return text(show(all));
   });
 

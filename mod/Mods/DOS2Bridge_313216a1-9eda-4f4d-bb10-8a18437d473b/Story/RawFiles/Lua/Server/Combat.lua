@@ -68,13 +68,18 @@ function Handlers.combat(args)
 
   local active = Osiq("CombatGetActiveEntity", id)
   local fighters, seen = {}, {}
-  local okOrder, order = pcall(function () return Ext.Entity.GetCombat(id):GetCurrentTurnOrder() end)
-  if okOrder and order then
-    for i, team in ipairs(order) do
-      local c = team.Character
-      if c and not seen[c.MyGuid] then
-        seen[c.MyGuid] = true
-        if c.MyGuid == me.MyGuid or c.IsPlayer or CanSeeObject(me, c) then fighters[#fighters + 1] = fighter(me, c, i) end
+  -- The current order only holds who is still to act this round; whoever already acted is in the next round's order.
+  local n = 0
+  for _, which in ipairs({ "GetCurrentTurnOrder", "GetNextTurnOrder" }) do
+    local okOrder, order = pcall(function () local cb = Ext.Entity.GetCombat(id); return cb[which](cb) end)
+    if okOrder and order then
+      for _, team in ipairs(order) do
+        local c = team.Character
+        if c and not seen[c.MyGuid] then
+          seen[c.MyGuid] = true
+          n = n + 1
+          if c.MyGuid == me.MyGuid or c.IsPlayer or CanSeeObject(me, c) then fighters[#fighters + 1] = fighter(me, c, n) end
+        end
       end
     end
   end

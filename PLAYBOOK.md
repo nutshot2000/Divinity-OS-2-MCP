@@ -28,7 +28,8 @@ watching. This file is sent to you as the server's instructions; `dos2_help` ret
 ## Exploring (the main loop)
 
 1. `dos2_look` – people and items in sight, nearest first, with GUIDs and tags (enemy, container, locked, dead).
-2. `dos2_minimap` – the people marked on the minimap, also behind walls: who is around to talk to.
+2. `dos2_minimap` – the people and enemies marked on the minimap, also behind walls. It shows people only, not
+   rooms or loot: it is no shortcut. Still walk every room and open every container before moving on.
 3. `dos2_grid` – a map: `#` wall, `.` floor, `d` door, `?` not explored yet, `f` fire, `p` poison, `o` oil.
 4. Pick ONE thing and do it:
    - walk: `dos2_move x=.. z=..` or `dos2_move target=<GUID>`

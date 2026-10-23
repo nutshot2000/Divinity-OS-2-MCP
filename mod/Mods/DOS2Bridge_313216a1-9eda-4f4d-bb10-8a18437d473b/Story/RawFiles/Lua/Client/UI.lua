@@ -248,10 +248,10 @@ end
 
 -- Minimap (UI type 30): what the player sees on it. Before each full redraw ("update" with false) the game fills
 -- map_mc's add_icons with groups of five numbers: the object's handle (bit-cast to a double), icon type, x, y, and the
--- icon's rotation. Seen so far: type 11 = you, 3 = a person nearby (shown even behind walls, as the minimap does).
+-- icon's rotation. Seen so far: type 11 = you, 1 = an enemy, 3 = a person nearby (shown even behind walls, as the minimap does).
 -- Only what the minimap draws is kept, so nothing here goes beyond what the player can see on screen.
 local MINIMAP_UI = 30
-local ICON_KIND = { [3] = "person", [11] = "you" }
+local ICON_KIND = { [1] = "enemy", [3] = "person", [11] = "you" }
 MinimapIcons = MinimapIcons or {}
 
 local function recordMinimap(e)
