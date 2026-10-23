@@ -44,6 +44,13 @@ watching. This file is sent to you as the server's instructions; `dos2_help` ret
    - "dialogue started" – use `dos2_dialog`.
    - "combat started" – use `dos2_combat`.
 
+## Leaving an area
+
+Stairs, ladders and hatches can end the area for good: the game may play its story and move you on within seconds,
+with no way back (the ship's top-deck stairs led to Fort Joy). Before using one, finish the area: every room, every
+container, every body, every locked door you can reasonably deal with. `dos2_minimap` marks stairs and exits.
+Tool calls answering "loading" after stairs mean a transition is under way: wait, do not retry.
+
 ## Talking
 
 1. `dos2_talk target=<GUID>` – walks over and starts the conversation; shows the lines and numbered answers.
