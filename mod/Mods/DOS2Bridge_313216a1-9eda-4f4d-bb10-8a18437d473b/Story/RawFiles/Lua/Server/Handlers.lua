@@ -329,8 +329,12 @@ function Handlers.equip(args)
     end
   end
   if #unmet > 0 then error("Cannot equip " .. (NameOf(item) or "that") .. ": needs " .. table.concat(unmet, ", ")) end
+  -- In combat, equipping costs 1 AP in the game's own inventory; CharacterEquipItem does not charge it, so do it here.
+  local inCombat = Osiq("CharacterIsInCombat", me.MyGuid) == 1
+  if inCombat and (me.Stats.CurrentAP or 0) < 1 then error("Equipping in combat costs 1 AP and you have none") end
   Osi.CharacterEquipItem(me.MyGuid, item.MyGuid)
-  return { equipped = NameOf(item) }
+  if inCombat then Osi.CharacterAddActionPoints(me.MyGuid, -1) end
+  return { equipped = NameOf(item), ap_spent = inCombat and 1 or 0 }
 end
 
 --- Narration: a line of overhead text on the active character, so the watching player sees what is planned.
