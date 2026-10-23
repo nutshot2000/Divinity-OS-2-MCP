@@ -1,0 +1,32 @@
+// Tools: containers and loot.
+import { tool, call, text, z, guid } from "../core.js";
+
+const line = (i) => `  ${i.name}${i.amount > 1 ? ` x${i.amount}` : ""} [${i.guid}]` + (i.owned_by ? ` (owned by ${i.owned_by})` : "");
+
+tool("dos2_loot", "List what is in a container the active character has opened and stands next to (open it with " +
+  "dos2_use first), or on a dead body next to you (walk to it with dos2_move; bodies need no opening). " +
+  "Pass take=\"all\" or take=[GUIDs] to move items into the character's inventory. Items owned by " +
+  "someone else are listed but never taken: that would be stealing.",
+  { container: guid, take: z.union([z.literal("all"), z.array(z.string())]).optional() },
+  async (a) => {
+    if (a.take == null) {
+      const r = await call("loot_list", { container: a.container });
+      return text(`${r.container}:\n${r.items.map(line).join("\n") || "  empty"}`);
+    }
+    const r = await call("loot_take", { container: a.container, items: a.take === "all" ? undefined : a.take });
+    return text(`${r.container}: took\n${r.taken.map(line).join("\n") || "  nothing"}` +
+      (r.skipped_owned.length ? `\nleft (owned):\n${r.skipped_owned.map(line).join("\n")}` : ""));
+  });
+
+tool("dos2_equip", "Equip a weapon, shield or armour from your inventory by GUID (from dos2_loot). Refuses if you do " +
+  "not meet its attribute requirements, as the game would.",
+  { item: guid },
+  async (a) => text(`Equipped ${(await call("equip", a)).equipped}.`));
+
+tool("dos2_inventory", "Your character's inventory as the inventory screen shows it: name, amount, what is equipped, " +
+  "and descriptions. Use dos2_use on an item's GUID to drink, eat or read it, dos2_equip to wear it.",
+  {}, async () => {
+    const items = await call("inventory");
+    return text(items.map((i) => `  ${i.name}${i.amount > 1 ? ` x${i.amount}` : ""} [${i.guid}]${i.equipped ? " (equipped)" : ""}` +
+      (i.description ? `\n      ${i.description.replace(/<[^>]*>/g, "")}` : "")).join("\n") || "  empty");
+  });
