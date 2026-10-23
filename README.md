@@ -32,6 +32,10 @@ and plays blind (no story or puzzle knowledge from training data). See [PLAYBOOK
 
 8. Ask the AI to call `dos2_ping`; it should report a heartbeat and the level name.
 
+Watching: notes and books stay on screen for a few seconds (3 s plus ~1 s per 40 characters, up to 12 s) and loot
+windows for 3 s before they close, so the viewer can read them. Set `DOS2_READ_SECONDS` / `DOS2_LOOT_SECONDS` in the
+MCP server's environment to change this (`0` = close at once, for faster unwatched runs).
+
 Tips: use **borderless window** mode (fullscreen minimises when it loses focus). Set `DOS2_DATA_DIR` if the game's
 `Osiris Data` folder is not under `Documents` or `OneDrive\Documents`.
 

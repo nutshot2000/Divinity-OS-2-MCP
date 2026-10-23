@@ -3,6 +3,11 @@ import { tool, call, text, json, z, guid } from "../core.js";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// How long books/notes (base seconds, plus ~1 s per 40 characters, up to 12 s) and loot windows stay on screen for the
+// watcher before they are closed. 0 closes them at once (faster, for unwatched runs).
+const READ_SECONDS = Number(process.env.DOS2_READ_SECONDS ?? 3);
+const LOOT_SECONDS = Number(process.env.DOS2_LOOT_SECONDS ?? 3);
+
 /** A status call during polling. Stairs, ladders and doors that change area make the game briefly "not running"
  *  (and calls time out): that is part of the action succeeding, so wait and retry instead of reporting an error. */
 async function poll(cmd, args, maxWaitMs = 20000) {
@@ -121,8 +126,12 @@ tool("dos2_use", "Use an item with the active character: open a container or doo
     const pages = await call("book_text", {}, 5000, "client").catch(() => []);
     if (pages.length) {
       const body = pages.map((p) => String(p).replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]*>/g, "").trim()).join("\n\n");
+      // Leave the book on screen long enough for the watcher to read some of it (panels close after the tool returns).
+      await sleep(Math.min(12, READ_SECONDS + body.length / 40) * 1000 * (READ_SECONDS > 0 ? 1 : 0));
       return text(`${started.using} reads:\n${body}`);
     }
+    // Same for a loot window: show what is inside for a moment.
+    if (s.opened && LOOT_SECONDS > 0) await sleep(LOOT_SECONDS * 1000);
     // Stairs, ladders and hatches move the character: say where to, instead of a distance to the item left behind.
     const after = await poll("move_status", { event: "" });
     const moved = Math.hypot(after.x - before.x, after.z - before.z);
