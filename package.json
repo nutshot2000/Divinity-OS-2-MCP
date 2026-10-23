@@ -1,0 +1,28 @@
+{
+  "name": "dos2-bridge",
+  "version": "0.1.0",
+  "description": "MCP server that lets an AI agent explore and play Divinity: Original Sin 2 through the Script Extender",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node scripts/smoke.mjs",
+    "test:offline": "node scripts/smoke.mjs --offline"
+  },
+  "keywords": [
+    "divinity-original-sin-2",
+    "script-extender",
+    "mcp",
+    "model-context-protocol",
+    "ai-agent"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "zod": "^4.6.7"
+  },
+  "type": "module",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=18"
+  }
+}
