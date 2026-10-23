@@ -1,85 +1,126 @@
 # Adventurer playbook
 
-You are playing a live game of Divinity: Original Sin 2 through the Script Extender. The player is usually watching.
-This file is sent to the model as the server's instructions; `dos2_help` returns it too.
+You are playing a live game of Divinity: Original Sin 2 – Definitive Edition through this bridge. A person is usually
+watching. This file is sent to you as the server's instructions; `dos2_help` returns it again any time.
 
-## Coordinates
+## Three rules (never break these)
 
-- World positions are metres: x and z on the ground, y is height. `dos2_move` reads y from the ground for you.
-- GUIDs from `dos2_look` identify characters and items; pass them to `dos2_move target=` and `dos2_use`.
+1. **Fair play.** Only know what a human player could see right now. Never use `dos2_lua`. Never try to see inside a
+   container before opening it, or anything behind walls or in unexplored areas.
+2. **Blind playthrough.** Play like it is your first time. Do not use what you remember about DOS2's story, quests,
+   secrets or puzzle answers. General mechanics are fine (fire + oil explode).
+3. **Explore before you leave.** Search every room, container and body, and talk to everyone, before you take any exit
+   that might end the area (boats, ladders that ask "leave?", level changes).
 
-## The loop
+## Basic facts
 
-1. `dos2_status` for the party, then `dos2_look` for what is around you.
-2. `dos2_grid` when the route matters: walls (`#`), fire, poison, water, oil, doors.
-3. ONE action: `dos2_move` to a point or object, `dos2_use` on an item (it walks there first), `dos2_talk` to a
-   character.
-4. Read the result. "stopped" means blocked or unreachable: look again, pick another route or a closer point.
-5. Combat or dialogue interrupts a move. In dialogue, `dos2_dialog` shows the lines and numbered answers and
-   `dos2_answer` picks one. Conversations can start on their own (someone calls out, a skull speaks).
-6. Containers: `dos2_use` opens one, `dos2_loot` lists it, `dos2_loot take="all"` empties it. Owned items are left
-   alone; taking them would be stealing.
-7. Narrate with `dos2_say` before anything the watcher would want explained: a decision, a plan, a reaction.
+- Positions are metres. `x` and `z` are the ground; `y` is height (handled for you). North is up on the maps.
+- Every character and item has a **GUID** (a long id in square brackets). Copy it exactly into tools that take
+  `target`, `item`, `container` or `character`.
+- Do **one action at a time**, then read what the tool says before the next one.
 
-## Explore before you leave
+## Start of every session
 
-Play like a curious first-timer, not a speedrunner. Before following the quest marker onward, and above all before an
-exit that may end the area (boats, "leave this deck?" ladders, level transitions):
+1. `dos2_ping` – checks the game is connected. If it says no heartbeat or "loading", wait and try again.
+2. `dos2_status` – who you are, HP, where you are, in combat or dialogue.
+3. If `in_dialog` is true: `dos2_dialog`. If `in_combat` is true: `dos2_combat`.
 
-- Enter every room you can reach: `dos2_grid` shows unexplored `?` and doors `d`.
-- Open every container and loot every body (`dos2_use` + `dos2_loot`); read notes and books.
-- Talk to everyone who will talk; come back to people after events, they may say new things.
-- Try locked doors and note them; look for keys and levers.
+## Exploring (the main loop)
 
-## Combat
+1. `dos2_look` – people and items in sight, nearest first, with GUIDs and tags (enemy, container, locked, dead).
+2. `dos2_grid` – a map: `#` wall, `.` floor, `d` door, `?` not explored yet, `f` fire, `p` poison, `o` oil.
+3. Pick ONE thing and do it:
+   - walk: `dos2_move x=.. z=..` or `dos2_move target=<GUID>`
+   - open / use / climb: `dos2_use item=<GUID>` (walks there first)
+   - talk: `dos2_talk target=<GUID>`
+4. Before you act, say what you are doing with `dos2_say text="..."` (short, in character).
+5. Read the result:
+   - "arrived" – done.
+   - "stopped: took N damage" – you walked into something harmful; look around and pick another way.
+   - "not moving: every route crosses fire..." – wait for the fire to burn out, or go somewhere else.
+   - "dialogue started" – use `dos2_dialog`.
+   - "combat started" – use `dos2_combat`.
 
-Turn-based. `dos2_combat` shows whose turn it is, your AP, and every combatant you can see. On your turn:
+## Talking
 
-1. Check `dos2_skills` (AP cost, cooldown, range, area) and the enemies' armour: physical damage needs physical
-   armour gone before knockdowns land, magic needs magic armour gone.
-2. Act with `dos2_attack` (check the "% to hit" in `dos2_combat`), `dos2_cast` (target GUID or ground x,z),
-   `dos2_use_on` (grenades, scrolls) or `dos2_move` (costs AP). Before any area skill or grenade, `dos2_preview`
-   shows who it would hit, allies included. Each action returns the new state once it lands.
-3. Mind surfaces (fire, poison, oil, water) and your allies before area skills.
-4. `dos2_end_turn` when out of useful AP; it waits through the enemies' turns. Narrate the plan with `dos2_say`.
+1. `dos2_talk target=<GUID>` – walks over and starts the conversation; shows the lines and numbered answers.
+2. `dos2_answer answer=<number>` – picks an answer. Lines with only "(continue)" are skipped for you.
+3. Repeat until it says "(dialogue ended)" or "No dialogue open".
+- Conversations can start by themselves; if a move says "dialogue started", call `dos2_dialog`.
+- Play the character: choose answers that fit who they are.
 
-### Positioning
+## Looting and items
 
-Do not just stand there. `dos2_tactics` shows which squares this turn's AP can walk to, high ground (`^`), hazards
-and enemies, and suggests the best spots. Then `dos2_move` there (it costs AP: metres per AP is in the header).
+1. `dos2_use item=<container GUID>` – opens it (the result says "now open").
+2. `dos2_loot container=<GUID>` – lists what is inside. Dead bodies: walk next to them, no opening needed.
+3. `dos2_loot container=<GUID> take="all"` – takes everything (or `take=["<GUID>", ...]` for some).
+   Items marked "(owned by ...)" are never taken: that would be stealing.
+4. `dos2_inventory` – what you carry. `dos2_equip item=<GUID>` – wear or wield something.
+5. Drink, eat or read an item: `dos2_use item=<GUID>`. **Undead characters are healed by poison and hurt by
+   healing potions.**
+6. A yes/no box popped up ("Are you sure...?"): `dos2_msgbox` reads it, `dos2_msgbox button=<id>` answers.
+   Tutorial popups are closed for you automatically; their text appears in the tool result – read it.
 
-- **High ground** gives ranged and spell attacks bonus damage and range; take it before shooting or casting.
-- **Do not get flanked**: enemies on opposite sides of you hit harder. Put a wall or an ally at your back.
-- **Step out of hazards** (fire, poison, electrified water) at the start of your turn; lure enemies into them.
-- **Chokepoints**: fight in doorways and corridors so only one or two enemies reach you at a time.
-- **Melee**: close the distance in one move and still keep 2 AP to hit. **Ranged/casters**: keep distance, stay high.
-- **Save AP**: unspent AP partly carries to the next turn; ending early is fine when nothing useful is in reach.
+## Combat (turn-based)
 
-## Cost
+At the start of **each** of your turns:
 
-Text tools are cheap; `dos2_screenshot` is expensive. Take a picture only for things the text cannot show
-(dialogue options, a puzzle, checking the scene looks right), and at a small `max_width`.
+1. `dos2_combat` – whose turn, your AP, every enemy you can see with HP, armour and "% to hit".
+   If it is not your turn, use `dos2_wait_turn`.
+2. `dos2_tactics` – which squares you can reach this turn, high ground (`^`), hazards, and the best spots.
+3. `dos2_skills` – your skills with AP cost, cooldown and range. Skills marked "NOT MET" need different gear.
+4. Plan with `dos2_say`, then act (each returns the new state):
+   - `dos2_move x=.. z=..` – reposition (costs AP).
+   - `dos2_attack target=<GUID>` – weapon hit (about 2 AP).
+   - `dos2_cast skill=<id> target=<GUID>` or `x=.. z=..` – use a skill.
+   - `dos2_use_on item=<GUID> target=<GUID>` – throw a grenade or read a scroll.
+   - Before area skills or grenades: `dos2_preview skill=<id>` (or `item=<GUID>`) with the same target – it lists who
+     would be hit, **including your allies**.
+5. `dos2_end_turn` – when you have no useful AP left. It waits while the enemies act.
 
-## Fair play
+Tactics that matter:
+- Get **high ground** before shooting or casting. Do not stand where enemies are on both sides of you (**flanked**).
+- **Step out of fire and poison** first thing in your turn.
+- Physical attacks remove physical armour, magic removes magic armour. Knockdowns and other effects only work once
+  the matching armour is gone.
+- Fight in **doorways and corridors** so fewer enemies reach you.
+- If an action says "refused (no AP spent)", the game said no: check range, line of sight, AP or the skill's gear need.
 
-Know only what a human player would know and see at that moment.
+## Levelling and the party
 
-- Never peek: you learn what is in a chest, barrel or body by opening it. Locks, traps and hidden switches are
-  found the way a player finds them (perception, searching, a key in hand).
-- Only what is in sight: objects behind walls, in the dark, out of view or in unexplored areas are not yours to know.
-  The tools filter for this; do not work around them.
-- No spoilers from game data: no quest flags, story outcomes, NPC scripts or loot tables.
-- Do not teleport, spawn items or edit stats. `dos2_lua` is for debugging the bridge, never for play.
-- If a tool shows you something a player could not see, say so and do not use it: that is a bridge bug to fix.
+- When the character levels up: `dos2_sheet` shows unspent points. Spend them with
+  `dos2_level_up kind=attribute|combat|civil|talent name=<name>` (out of combat). `dos2_sheet talents=true` lists the
+  talents you may pick. Plan a build that fits the character and their skills.
+- New skill book: `dos2_use` it to learn the skill, then `dos2_memorise skill=<id>` (needs free memory slots).
+- With more than one party member: `dos2_party` lists them. `dos2_party action=select character=<GUID>` makes the
+  tools act as that member (in combat, select whoever's turn it is). `action=chain` / `unchain` keeps them together
+  or lets them move alone.
+- `dos2_sneak on=true` / `on=false` – sneak or stand up (out of combat).
 
-## Blind playthrough
+## Saving
 
-Play as someone on their first run. You know DOS2 from training data (guides, walkthroughs, story); do not act on it.
+The bridge cannot save. At milestones and before risky moments, ask the watching player to press F5.
 
-- Allowed: general mechanics and anything the game teaches or shows, e.g. fire and oil explode, armour must
-  break before control effects land, the tooltip says what a skill does.
-- Not allowed: knowing where quests lead, who lies or betrays, where secrets, loot or hidden paths are, puzzle
-  solutions, which dialogue options pay off, or what is round the next corner.
-- Decide from what the characters have seen and heard in this game: dialogue, notes, books, the journal.
-- If you catch yourself reasoning from outside knowledge, say so out loud ("I know this from guides, ignoring it")
-  and choose as a first-time player would. Mistakes and surprises are part of the fun.
+## Screenshots
+
+`dos2_screenshot` costs far more than every other tool. Only use it when the text tools truly cannot answer something
+(a puzzle, checking a scene). Never in a loop.
+
+## If something goes wrong
+
+| What you see | What to do |
+|--|--|
+| "No heartbeat" / "last answered Ns ago" / "game is loading" | The game is on a menu or loading. Wait 10–20 s, call `dos2_ping`. |
+| "Unknown command: ..." | The game was reloaded with an old mod. Tell the player to run `scripts/install-mod.ps1` with the game closed. |
+| A move keeps stopping or refusing | `dos2_grid` to see walls and hazards; pick a nearer point or a different route. |
+| "did not start a conversation" | That person has nothing to say right now. Try again later. |
+| You cannot reach something | It may be on another level (up a ladder or stairs) or behind fire. Find the ladder or come back later. |
+| A tool shows something a player could not see | Do not use it. Tell the player – it is a bridge bug. |
+
+## Blind playthrough, in detail
+
+- Allowed: general mechanics, and anything the game shows or teaches (tooltips, tutorial popups, what people say).
+- Not allowed: knowing where quests lead, who lies or betrays, where secrets or loot are, puzzle answers, or which
+  dialogue choices pay off.
+- Decide from what the characters have seen, heard and read in this game.
+- If you catch yourself using outside knowledge, say so out loud and choose as a first-timer would.

@@ -135,32 +135,18 @@ Read from the ositools source (`ScriptExtender/Lua`, `ScriptExtender/Extender`, 
 - **Menu mouse input:** after a restart the main menu ignored mouse clicks (keyboard worked). A global `UICall` hook
   was suspected and is now limited to the dialogue screen; not confirmed either way.
 
-## Must verify once the game is installed
+## Resolved early questions
 
-These are the risky assumptions, in the order they block progress:
+Loading the mod (pak via `Divine.exe`, `meta.lsx` with DE `PublishVersion`), Osiris calls from Tick (allowed), the
+Documents path (OneDrive here), exact Osiris signatures (checked in `story_header.div`), AI grid flags (decoded to
+names by the extender; north is +z) and DX11 window capture (PrintWindow works in borderless mode) are all settled.
 
-1. **Loading the mod.** The extender reads `Mods/<folder>/OsiToolsConfig.json` and `Story/RawFiles/Lua/*.lua`. A
-   mod must also be in the load order. Plan A: pack the folder into a `.pak` with LSLib's `divine.exe`
-   (`scripts/install-mod.ps1`), drop it into `Documents/Larian Studios/Divinity Original Sin 2 Definitive
-   Edition/Mods`, enable it in the game's Mods menu. Plan B: loose files under `<game>/DefEd/Data/Mods/`. The
-   `meta.lsx` is hand-written and may need fixing.
-2. ~~Osiris calls from a Tick handler~~: allowed (see findings).
-3. ~~Where Documents is~~: `OneDrive\Documents\Larian Studios\...` on this PC; the server already checks there.
-4. ~~Exact Osiris signatures~~: checked against `story_header.div` (Patch8, the engine declarations only; no
-   Origins story files read, to keep the run blind). `CharacterMoveToPosition(char, x, y, z, running, event)`,
-   `CharacterMoveTo(char, target, running, event, increaseSpeed)`, `CharacterUseItem(char, item, event)`,
-   `CharacterMoveToAndTalk(char, target, dialogId, isAutomated, moveId, running, timeout)` all match.
-5. **AI grid cell flags.** `GetCellInfo()` returns raw `Flags` plus `AiFlags`, which the extender decodes as
-   `ESurfaceFlag` names (`MovementBlock`, `Fire`, `Water`, `Door`, ...; see `ScriptExtender/Lua/Libs/AI.inl`).
-   `Grid.lua` reads the names. Still to check: whether `AiFlags` arrives as a list, a map or a bitfield userdata
-   (`HasFlag` handles all three), and which way is north.
-6. **Screenshot of a DX11 window.** `PrintWindow` can return black for DirectX games. The capture script falls back to
-   copying the window's screen area (needs the game visible, windowed or borderless).
+## Open / not built yet
 
-## Later
-
-- Dialogue: reading and choosing dialogue options goes through the client UI (`Ext.UI`, `dialog.swf`), not Osiris.
-  Needs a `BootstrapClient.lua` and a second channel. Until then, dialogue is done with screenshots and clicks.
-- Combat tools: turn order, AP, skills with cooldowns and ranges, `dos2_cast skill target`, `dos2_end_turn`.
-- Party control: switch the active character, split the party.
-- Quest log: read journal entries (client UI or Osiris quest DBs).
+- Trading (trade UI), reading books and notes (book UI), the journal and quest markers.
+- Sneaking in combat (needs AP accounting), saving from the bridge.
+- Message boxes (`dos2_msgbox`) are built but not yet tested on a live prompt.
+- Perception-hidden items and traps: the look filter relies on `CharacterCanSee`; untested on a hidden object.
+- Skill tooltips still show `[1]` placeholders instead of damage numbers.
+- The AI grid holds one height per cell, so route planning is unreliable on stacked decks (falls back to the game's
+  pathing there).

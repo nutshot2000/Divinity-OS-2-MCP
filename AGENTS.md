@@ -108,7 +108,9 @@ then `dos2_memorise`.
 **Party.** Once others join, `dos2_party` lists them; `action=select` makes the tools act as that member (in combat,
 select whoever's turn it is), `chain`/`unchain` moves them together or apart.
 
-**Saving.** Quicksave (F5) before risky moments and after milestones; it needs the game window focused (screen control).
+**Saving.** The bridge cannot save. Quicksave is F5 in the game window: ask the watching player, or with screen control
+run `scripts/focus-game.ps1` first and then press F5. Quickload (F8) reloads Lua from the *installed* pak, so keep it
+current with `scripts/install-mod.ps1` (game closed). Never call tools in a tight loop while a save is loading.
 
 Tutorial popups are dismissed automatically after every tool call; their text is appended to the tool's result as
 `[Tutorial dismissed: ...]`. Read them: they teach mechanics.
@@ -120,7 +122,7 @@ NOT MET"). At 0 AP the game ends your turn by itself; `dos2_end_turn` then just 
 
 The bridge does not yet cover these; use screen control (screenshot + click/keys) sparingly:
 
-- Character creation, trading, reading books and notes.
+- Character creation, trading, reading books and notes, the journal, saving (F5), sneaking in combat.
 - Main-menu navigation. If the mouse is ignored there, the keyboard (arrows, Enter) works.
 
 Screen-control tips on Windows: run the game in borderless window mode (fullscreen minimises when it loses focus and

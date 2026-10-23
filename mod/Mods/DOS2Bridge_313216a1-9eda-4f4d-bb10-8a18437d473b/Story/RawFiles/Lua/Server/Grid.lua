@@ -53,6 +53,5 @@ function Handlers.grid(args)
     end
     rows[#rows + 1] = string.format("%6s ", Round(z)) .. table.concat(line)
   end
-  return { level = me.CurrentLevel, x = cx, z = cz, x1 = x1, x2 = x2, z1 = z1, z2 = z2, step = step, rows = rows,
-    legend_unverified = true }
+  return { level = me.CurrentLevel, x = cx, z = cz, x1 = x1, x2 = x2, z1 = z1, z2 = z2, step = step, rows = rows }
 end
