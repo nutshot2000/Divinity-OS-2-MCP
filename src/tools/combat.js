@@ -15,8 +15,12 @@ const hpText = (f) => `${f.hp}/${f.max_hp} HP` + (f.armor ? `, ${f.armor} armour
 
 function show(s) {
   // The engine raises ObjectTurnStarted repeatedly; keep casts and deaths, and only the latest turn line.
+  // A level change reports every dead creature in the area at once: keep a handful and count the rest.
+  let deaths = 0;
+  s.log = s.log.filter((e) => e.event !== "died" || ++deaths <= 6);
   const lastTurn = s.log.map((e) => e.event).lastIndexOf("turn");
-  const log = s.log.filter((e, i) => e.event !== "turn" || i === lastTurn).map((e) => e.event === "cast" ? `${e.who} cast ${e.skill}` : e.event === "died" ? `${e.who} died`
+  const extra = deaths > 6 ? `(${deaths - 6} more died; many at once usually means a new area loaded)\n` : "";
+  const log = extra + s.log.filter((e, i) => e.event !== "turn" || i === lastTurn).map((e) => e.event === "cast" ? `${e.who} cast ${e.skill}` : e.event === "died" ? `${e.who} died`
     : e.event === "turn" ? `-- ${e.who}'s turn` : e.event).join("\n");
   if (!s.in_combat) return (log ? `${log}\n\n` : "") + "Not in combat.";
   const fighters = s.fighters.map((f) => `  ${f.order}. ${f.name} [${f.guid}] ${hpText(f)}, ${f.ap} AP, ${f.dist}m at ${f.x},${f.z}` +
