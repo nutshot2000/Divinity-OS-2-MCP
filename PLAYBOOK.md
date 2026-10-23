@@ -47,7 +47,10 @@ watching. This file is sent to you as the server's instructions; `dos2_help` ret
 2. `dos2_answer answer=<number>` – picks an answer. Lines with only "(continue)" are skipped for you.
 3. Repeat until it says "(dialogue ended)" or "No dialogue open".
 - Conversations can start by themselves; if a move says "dialogue started", call `dos2_dialog`.
-- Play the character: choose answers that fit who they are.
+- **Read every answer before choosing. Never just pick 0 or the first one.** Pick the answer that fits the
+  character (their background, what they want, what has happened so far), and say why with `dos2_say` when it
+  matters. Different characters should make different choices in the same conversation.
+- Answers in brackets like [PERSUASION] or [SCHOLAR] are checks or tags; they appear only when the game offers them.
 
 ## Looting and items
 

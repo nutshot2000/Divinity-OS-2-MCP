@@ -64,7 +64,8 @@ tool("dos2_dialog", "Read the open dialogue: lines spoken since the last read an
 
 const onlyContinue = (d) => d.open && d.answers.length === 1 && /^\(continue\)$/i.test(d.answers[0]);
 
-tool("dos2_answer", "Choose a dialogue answer by its number from dos2_dialog. Lines with nothing to choose but " +
+tool("dos2_answer", "Choose a dialogue answer by its number from dos2_dialog. Read all answers and pick the one that " +
+  "fits your character - do not default to 0. Lines with nothing to choose but " +
   "(continue) are stepped through automatically (each still shows in game for a moment). Returns what is said and " +
   "the next real choice.",
   { answer: z.number().int().min(0), auto_continue: z.boolean().optional().describe("Default true") },
