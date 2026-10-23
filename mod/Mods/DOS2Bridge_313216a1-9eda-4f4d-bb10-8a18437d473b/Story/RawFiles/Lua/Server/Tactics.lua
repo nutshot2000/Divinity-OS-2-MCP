@@ -163,6 +163,11 @@ function Handlers.safe_path(args)
   local p = Pos(me)
   local sx, sz = math.floor(p.x + 0.5), math.floor(p.z + 0.5)
   local gx, gz = math.floor(args.x + 0.5), math.floor(args.z + 0.5)
+  -- The AI grid keeps one height per cell; on stacked decks the character may be on a floor above or below it.
+  local here = grid:GetHeight(p.x, p.z)
+  if here == nil or math.abs(here - p.y) > 1.5 then
+    return { error = "multi-level: the grid describes another floor here, so no route can be planned" }
+  end
   local margin = 12
   local minX, maxX = math.min(sx, gx) - margin, math.max(sx, gx) + margin
   local minZ, maxZ = math.min(sz, gz) - margin, math.max(sz, gz) + margin

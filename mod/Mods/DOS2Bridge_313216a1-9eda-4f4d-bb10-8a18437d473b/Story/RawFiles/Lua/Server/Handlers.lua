@@ -240,6 +240,12 @@ local function ownerOf(item)
   return c and NameOf(c) or "someone"
 end
 
+--- Engine placeholder items ("Dummy") never show in the game's loot window.
+local function lootable(item)
+  local n = NameOf(item)
+  return n ~= nil and n ~= "Dummy"
+end
+
 local function lootEntry(item)
   local owner = ownerOf(item)
   return { name = NameOf(item) or "(unnamed)", guid = item.MyGuid, amount = item.Amount or 1,
@@ -252,7 +258,7 @@ function Handlers.loot_list(args)
   local items = {}
   for _, g in ipairs(box:GetInventoryItems() or {}) do
     local it = GetItem(g)
-    if it then items[#items + 1] = lootEntry(it) end
+    if it and lootable(it) then items[#items + 1] = lootEntry(it) end
   end
   return { container = NameOf(box), items = items }
 end
@@ -270,7 +276,7 @@ function Handlers.loot_take(args)
   local taken, skipped = {}, {}
   for _, g in ipairs(box:GetInventoryItems() or {}) do
     local it = GetItem(g)
-    if it and (wanted == nil or wanted[BareGuid(it.MyGuid)]) then
+    if it and lootable(it) and (wanted == nil or wanted[BareGuid(it.MyGuid)]) then
       local entry = lootEntry(it)
       if entry.owned_by then
         skipped[#skipped + 1] = entry
