@@ -92,8 +92,8 @@ end
 function InGrid(grid, x, z)
   if grid == nil or type(x) ~= "number" or type(z) ~= "number" then return false end
   local ok, inside = pcall(function ()
-    local s = grid.GridScale
-    return x >= grid.OffsetX and z >= grid.OffsetZ and x < grid.OffsetX + grid.Width * s and z < grid.OffsetZ + grid.Height * s
+    -- Width and Height are in metres already (not cells), e.g. 240 x 458.5 on the tutorial ship.
+    return x >= grid.OffsetX and z >= grid.OffsetZ and x < grid.OffsetX + grid.Width and z < grid.OffsetZ + grid.Height
   end)
   return ok and inside == true
 end
