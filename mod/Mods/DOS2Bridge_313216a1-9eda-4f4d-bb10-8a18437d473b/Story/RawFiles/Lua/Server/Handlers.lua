@@ -183,6 +183,14 @@ function Handlers.use(args)
   -- A walk that stopped short of the item can leave its move task queued; using the item on top of it crashed the
   -- game's client (a null write in its item-action code, four times). Start from an empty task queue.
   Osi.CharacterPurgeQueue(me.MyGuid)
+  -- Opening a second container while the first is still marked open crashed the game every time (five crashes, a null
+  -- write in the client's item code). Close the previous one on the story side first.
+  if LastOpened and BareGuid(LastOpened) ~= BareGuid(item.MyGuid) then
+    pcall(function ()
+      if Osiq("ItemIsOpened", LastOpened) == 1 then Osi.ItemClose(LastOpened) end
+    end)
+  end
+  if Osiq("ItemIsContainer", item.MyGuid) == 1 then LastOpened = item.MyGuid end
   -- CharacterUseItem(character, item, event)
   Osi.CharacterUseItem(me.MyGuid, item.MyGuid, event)
   return { using = NameOf(item), guid = item.MyGuid, event = event, tags = itemTags(item) }

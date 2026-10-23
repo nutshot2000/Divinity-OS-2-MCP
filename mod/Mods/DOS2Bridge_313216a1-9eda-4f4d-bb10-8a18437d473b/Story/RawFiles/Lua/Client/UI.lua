@@ -151,7 +151,10 @@ function ClientHandlers.tidy_ui()
       local file = tostring(ui.Path):match("[^/\\]+$")
       local label = PANELS[file]
       if label then
-        for _, fn in ipairs(CLOSE_CALLS) do
+        -- The loot window is only hidden: closing it with closeUI left the game's container state dangling and the
+        -- next container opened crashed the client (six crashes). Everything else gets the proper close first.
+        local calls = file == "containerInventory.swf" and { "hideUI" } or CLOSE_CALLS
+        for _, fn in ipairs(calls) do
           pcall(function () ui:ExternalInterfaceCall(fn) end)
           if not isVisible(ui) then break end
         end
