@@ -56,7 +56,8 @@ watching. This file is sent to you as the server's instructions; `dos2_help` ret
 3. `dos2_loot container=<GUID> take="all"` – takes everything (or `take=["<GUID>", ...]` for some).
    Items marked "(owned by ...)" are never taken: that would be stealing.
 4. `dos2_inventory` – what you carry. `dos2_equip item=<GUID>` – wear or wield something.
-5. Drink, eat or read an item: `dos2_use item=<GUID>`. **Undead characters are healed by poison and hurt by
+5. Drink, eat or read an item: `dos2_use item=<GUID>`. Notes and books: the result gives the full text ("... reads:").
+   Read every note you find – they are often the only clues. **Undead characters are healed by poison and hurt by
    healing potions.**
 6. A yes/no box popped up ("Are you sure...?"): `dos2_msgbox` reads it, `dos2_msgbox button=<id>` answers.
    Tutorial popups are closed for you automatically; their text appears in the tool result – read it.

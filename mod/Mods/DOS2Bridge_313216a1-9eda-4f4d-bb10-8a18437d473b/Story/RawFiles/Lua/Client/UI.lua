@@ -81,11 +81,23 @@ subscribe(Ext.Events.UICall, function (e) pcall(recordDialog, "call", e) end)
 -- boxes (UI 29, e.g. "leave the Tutorial Deck?") are built from invokes and answered with ButtonPressed(id).
 TUTORIAL_UI, MSGBOX_UI = 55, 29
 PendingTutorials = PendingTutorials or {}
+BookPages = BookPages or {}
+
+--- Pages of the note or book read since the last call (and forget them).
+function ClientHandlers.book_text()
+  local pages = BookPages
+  BookPages = {}
+  return pages
+end
 MsgBoxCalls = MsgBoxCalls or {}
 local function recordPopup(e)
   local ok, typeId = pcall(function () return e.UI:GetTypeId() end)
   if not ok or tostring(e.When) == "After" then return end
-  if typeId == TUTORIAL_UI and e.Function == "fadeInModal" then
+  if e.Function == "addPage" then
+    -- Notes and books: the book screen is handed each page's text (reading = using the item).
+    local a = argsOf(e)
+    if type(a[1]) == "string" then BookPages[#BookPages + 1] = a[1] end
+  elseif typeId == TUTORIAL_UI and e.Function == "fadeInModal" then
     local a = argsOf(e)
     PendingTutorials[#PendingTutorials + 1] = { category = a[1], title = a[2], text = a[3] }
   elseif typeId == MSGBOX_UI then
@@ -121,7 +133,9 @@ local PANELS = {
   ["journal.swf"] = "journal", ["examine.swf"] = "examine window", ["uiCraft.swf"] = "crafting", ["skills.swf"] = "skills",
   ["trade.swf"] = "trade", ["book.swf"] = "book", ["waypoints.swf"] = "waypoints", ["gameMenu.swf"] = "pause menu",
 }
-local CLOSE_CALLS = { "hideUI", "closeUI", "requestCloseUI", "closePressed", "cancelPressed", "closeMe" }
+-- Proper close calls first: hideUI only hides a panel, and the game may then think it is still open (a hidden book
+-- screen blocked every later read). hideUI is the last resort.
+local CLOSE_CALLS = { "closeUI", "requestCloseUI", "closePressed", "cancelPressed", "closeMe", "hideUI" }
 
 local function isVisible(ui)
   local ok, v = pcall(function () return ui.OF_Visible end)

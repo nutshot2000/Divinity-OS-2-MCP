@@ -103,6 +103,7 @@ tool("dos2_use", "Use an item with the active character: open a container or doo
       if (m.refused || m.hurt || !/arrived|stopped/.test(m.outcome)) return text(`Did not reach the item: ${m.outcome}`);
     }
     const before = await call("move_status", { event: "" });
+    await call("book_text", {}, 5000, "client").catch(() => []); // forget pages read earlier
     const started = await call("use", { item: a.item });
     const deadline = Date.now() + (a.timeout ?? 20) * 1000;
     let s = {};
@@ -115,6 +116,13 @@ tool("dos2_use", "Use an item with the active character: open a container or doo
     }
     const outcome = s.result === "used" ? "used" : s.result === "failed" ? "failed (out of reach, locked or not usable)"
       : s.in_combat ? "interrupted: combat started" : s.in_dialog ? "interrupted: dialogue started" : "no result yet (still walking?)";
+    // Notes and books: give the text, as the book screen showed it.
+    await sleep(500);
+    const pages = await call("book_text", {}, 5000, "client").catch(() => []);
+    if (pages.length) {
+      const body = pages.map((p) => String(p).replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]*>/g, "").trim()).join("\n\n");
+      return text(`${started.using} reads:\n${body}`);
+    }
     // Stairs, ladders and hatches move the character: say where to, instead of a distance to the item left behind.
     const after = await poll("move_status", { event: "" });
     const moved = Math.hypot(after.x - before.x, after.z - before.z);

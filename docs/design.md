@@ -135,6 +135,18 @@ Read from the ositools source (`ScriptExtender/Lua`, `ScriptExtender/Extender`, 
 - **Menu mouse input:** after a restart the main menu ignored mouse clicks (keyboard worked). A global `UICall` hook
   was suspected and is now limited to the dialogue screen; not confirmed either way.
 
+## Panels, books and stairs (second testing round)
+
+- Panels left open: `ClientHandlers.tidy_ui` runs after every tool and closes visible panels from a list
+  (containerInventory, partyInventory, characterSheet, journal, examine, uiCraft, skills, trade, book, waypoints,
+  gameMenu) with their own close call. `closeUI` comes before `hideUI`: hiding only made the game treat the book
+  screen as still open and ignore later reads. Containers stay lootable for 5 minutes after their window closes
+  (`OpenedByUs`).
+- Books and notes: the book screen (UI type 2) gets `addPage(text)`; the client keeps the pages and `dos2_use`
+  returns them.
+- Stairs/ladders/hatches put the server briefly out of the "Running" state; polls now retry through it and
+  `dos2_use` reports the move ("now at x,z (moved N m)").
+
 ## Resolved early questions
 
 Loading the mod (pak via `Divine.exe`, `meta.lsx` with DE `PublishVersion`), Osiris calls from Tick (allowed), the
@@ -143,7 +155,7 @@ names by the extender; north is +z) and DX11 window capture (PrintWindow works i
 
 ## Open / not built yet
 
-- Trading (trade UI), reading books and notes (book UI), the journal and quest markers.
+- Trading (trade UI), the journal and quest markers.
 - Sneaking in combat (needs AP accounting), saving from the bridge.
 - Message boxes (`dos2_msgbox`) are built but not yet tested on a live prompt.
 - Perception-hidden items and traps: the look filter relies on `CharacterCanSee`; untested on a hidden object.

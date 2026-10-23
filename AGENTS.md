@@ -122,7 +122,11 @@ NOT MET"). At 0 AP the game ends your turn by itself; `dos2_end_turn` then just 
 
 The bridge does not yet cover these; use screen control (screenshot + click/keys) sparingly:
 
-- Character creation, trading, reading books and notes, the journal, saving (F5), sneaking in combat.
+- Character creation, trading, the journal, saving (F5), sneaking in combat.
+
+Handled automatically after every tool: tutorial popups (text appended to the result) and panels left open on screen
+(loot windows, inventory, journal, books, pause menu: "[Closed on screen: ...]"). Notes and books: `dos2_use` returns
+their text.
 - Main-menu navigation. If the mouse is ignored there, the keyboard (arrows, Enter) works.
 
 Screen-control tips on Windows: run the game in borderless window mode (fullscreen minimises when it loses focus and

@@ -40,7 +40,7 @@ Tips: use **borderless window** mode (fullscreen minimises when it loses focus).
 | Area | Tools |
 |--|--|
 | Status and senses | `dos2_ping`, `dos2_status`, `dos2_look`, `dos2_grid`, `dos2_screenshot` |
-| Moving and using | `dos2_move` (avoids fire/poison, stops on damage), `dos2_use`, `dos2_msgbox`, `dos2_say` |
+| Moving and using | `dos2_move` (avoids fire/poison, stops on damage), `dos2_use` (also reads notes and books, takes stairs), `dos2_msgbox`, `dos2_say` |
 | Talking | `dos2_talk`, `dos2_dialog`, `dos2_answer` |
 | Items | `dos2_loot` (containers and bodies), `dos2_inventory`, `dos2_equip` |
 | Combat | `dos2_combat`, `dos2_tactics`, `dos2_skills`, `dos2_attack`, `dos2_cast`, `dos2_preview`, `dos2_use_on`, `dos2_end_turn`, `dos2_wait_turn` |
@@ -51,8 +51,7 @@ Tips: use **borderless window** mode (fullscreen minimises when it loses focus).
 
 ## Not supported yet
 
-Trading, reading books and notes, the journal, character creation, saving (ask the player to press F5), and sneaking
-in combat. Use screen control for these if needed.
+Trading, the journal, character creation, saving (ask the player to press F5), and sneaking in combat. Use screen control for these if needed.
 
 ## Helper scripts
 
