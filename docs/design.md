@@ -199,3 +199,13 @@ there; only the minimap uncovers as you walk, and that mask is not readable from
 own record: the character's cell each second per level, with everything within 14 m marked seen. `Unexplored(x, z)` (not
 seen, or really shrouded) now drives the `?` on `dos2_grid`, the camera's "unexplored" refusal and `dos2_explore`.
 Open question: interiors with real shroud (cellars) were not tested; `Shrouded` is still checked for them.
+
+## The journal's Map tab (UI type 22)
+
+The map the player opens with M is the Map tab of the journal screen (journal.swf; the legend: quest marker, location,
+custom marker, waypoint shrine, secret, exit). Nothing is sent to it until it is opened. Opening it sent `selectTab(3)`,
+`setMapOffset`, `setMapLegendHidden` and one `setPlayerOnMap(index, ?, x, y, ?, name)` per party member (map units, not
+metres), then a stream of `update()`. On Fort Joy's first area no marker was sent and `add_icons` stayed empty: markers
+for quests, waypoints and exits probably arrive through `add_icons`/`addIcon` once there are some to show. The explored
+outline is part of the map texture, which Lua cannot read. Not built yet: wait until a map with markers has been opened
+and record `add_icons` then, as `Client/UI.lua` does for the minimap. The minimap already gives people, enemies and exits.
