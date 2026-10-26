@@ -241,3 +241,10 @@ container's item list, asks for no pickup notification, uses an amount of at lea
 
 Follow-up: the culprit was one item on Narin named "Unidentified [1]" (a name that never resolved); the other seven items
 transferred fine. `loot_take` now leaves any item whose name starts with "Unidentified [" and lists it as left alone.
+
+## Crash: ui:Hide() on the character sheet (2026-10-26)
+
+Third tidy-up crash: after `tidy_ui` switched to the engine's `ui:Hide()` for the loot window, inventory and character sheet, the
+game crashed (access violation in a memcpy in the character sheet's own code, VCRUNTIME140+0x1e250 from EoCApp+0x10343eb,
+the same trace as forcing the sheet open) when a panel the player had opened was hidden. Those three panels are hidden with
+`ExternalInterfaceCall("hideUI")` again; others with `closeUI`; `Hide()` and guessed close names are not used.

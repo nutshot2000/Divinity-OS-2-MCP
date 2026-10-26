@@ -151,13 +151,13 @@ function ClientHandlers.tidy_ui()
       local file = tostring(ui.Path):match("[^/\\]+$")
       local label = PANELS[file]
       if label then
-        -- The loot window, the inventory and the character sheet are only hidden (closeUI on them left the game's state
-        -- dangling or destroyed the screen). Everything else gets closeUI, the one close call known to work (books).
-        -- Guessing other close-call names crashed the game (2026-10-26, ExternalInterfaceCall in this loop), so after
-        -- closeUI the fallback is the engine's own Hide(), never another guessed name.
+        -- The loot window, the inventory and the character sheet are hidden with their own hideUI call (closeUI on them
+        -- left the game's state dangling or destroyed the screen). Everything else gets closeUI, the one close call known
+        -- to work (books). Two things crashed the game and are not used: guessing other close-call names, and the
+        -- engine's ui:Hide() (crash in the character sheet's own code, 2026-10-26, when a sheet the player had opened was
+        -- hidden that way).
         local hideOnly = file == "containerInventory.swf" or file == "partyInventory.swf" or file == "characterSheet.swf"
-        if not hideOnly then pcall(function () ui:ExternalInterfaceCall("closeUI") end) end
-        if isVisible(ui) then pcall(function () ui:Hide() end) end
+        pcall(function () ui:ExternalInterfaceCall(hideOnly and "hideUI" or "closeUI") end)
         closed[#closed + 1] = isVisible(ui) and (label .. " (could not close)") or label
       end
     end
