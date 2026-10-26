@@ -303,6 +303,9 @@ function Handlers.loot_take(args)
     local it = GetItem(g)
     if it and lootable(it) and (wanted == nil or wanted[BareGuid(it.MyGuid)]) then
       local entry = lootEntry(it)
+      -- An item whose name never resolved ("Unidentified [1]") crashed the game inside ItemToInventory (Narin's body,
+      -- 2026-10-26; everything else on him was fine). Such items are left where they are and reported.
+      if tostring(entry.name):find("^Unidentified %[") then entry.owned_by = "an unreadable item: left alone because taking it crashed the game once" end
       if entry.owned_by then
         skipped[#skipped + 1] = entry
       else

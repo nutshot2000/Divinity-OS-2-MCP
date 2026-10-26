@@ -238,3 +238,6 @@ abilities, 2 civil abilities, 3 talents, 4 traits). `selectTab(n)` only changes 
 Taking the items of an enemy (Narin) seconds after he died crashed the game inside `Osi.ItemToInventory`
 (`Handlers.loot_take`). Other bodies had always been fine. Unknown which item; `loot_take` now iterates a copy of the
 container's item list, asks for no pickup notification, uses an amount of at least 1, and `dos2_loot` waits 1.5 s first.
+
+Follow-up: the culprit was one item on Narin named "Unidentified [1]" (a name that never resolved); the other seven items
+transferred fine. `loot_take` now leaves any item whose name starts with "Unidentified [" and lists it as left alone.
