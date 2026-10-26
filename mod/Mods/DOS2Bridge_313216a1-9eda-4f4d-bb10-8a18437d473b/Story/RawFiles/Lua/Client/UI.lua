@@ -135,7 +135,7 @@ local PANELS = {
 }
 -- Proper close calls first: hideUI only hides a panel, and the game may then think it is still open (a hidden book
 -- screen blocked every later read). hideUI is the last resort.
-local CLOSE_CALLS = { "closeUI", "requestCloseUI", "closePressed", "cancelPressed", "closeMe", "hideUI" }
+-- (Close-call guessing was removed: see tidy_ui.)
 
 local function isVisible(ui)
   local ok, v = pcall(function () return ui.OF_Visible end)
@@ -151,14 +151,13 @@ function ClientHandlers.tidy_ui()
       local file = tostring(ui.Path):match("[^/\\]+$")
       local label = PANELS[file]
       if label then
-        -- The loot window and the inventory screen are only hidden: closing the loot window with closeUI left the game's
-        -- container state dangling and the next container opened crashed the client (six crashes), and closeUI seems to
-        -- destroy the inventory screen, so it cannot be shown again. Everything else gets the proper close first.
-        local calls = (file == "containerInventory.swf" or file == "partyInventory.swf" or file == "characterSheet.swf") and { "hideUI" } or CLOSE_CALLS
-        for _, fn in ipairs(calls) do
-          pcall(function () ui:ExternalInterfaceCall(fn) end)
-          if not isVisible(ui) then break end
-        end
+        -- The loot window, the inventory and the character sheet are only hidden (closeUI on them left the game's state
+        -- dangling or destroyed the screen). Everything else gets closeUI, the one close call known to work (books).
+        -- Guessing other close-call names crashed the game (2026-10-26, ExternalInterfaceCall in this loop), so after
+        -- closeUI the fallback is the engine's own Hide(), never another guessed name.
+        local hideOnly = file == "containerInventory.swf" or file == "partyInventory.swf" or file == "characterSheet.swf"
+        if not hideOnly then pcall(function () ui:ExternalInterfaceCall("closeUI") end) end
+        if isVisible(ui) then pcall(function () ui:Hide() end) end
         closed[#closed + 1] = isVisible(ui) and (label .. " (could not close)") or label
       end
     end

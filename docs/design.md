@@ -224,3 +224,11 @@ button stuck on, nothing drawn, and eventually unresponsive.
 Tabs: the sheet's own tab-button handler is `Ext.UI.GetByType(119):GetRoot().stats_mc.ClickTab(n)` (0 attributes, 1 combat
 abilities, 2 civil abilities, 3 talents, 4 traits). `selectTab(n)` only changes the title and tab highlight, not the panel.
 `show_sheet` in `Client/UI.lua` uses ClickTab; `dos2_level_up` shows the matching tab while it spends points.
+
+## Crash: guessing close-call names (2026-10-26)
+
+`tidy_ui` used to try `closeUI`, `requestCloseUI`, `closePressed`, `cancelPressed`, `closeMe`, `hideUI` through
+`ExternalInterfaceCall` until a panel disappeared. One of those calls on a panel that does not define it crashed the game
+(Script Extender crash dialog: `UIObjectFunctionCallCapture` from `UIObject::LuaExternalInterfaceCall`, Lua frame
+`Client/UI.lua` in the tidy loop). It now calls only `closeUI` (known to work on books) and falls back to the engine's
+`ui:Hide()`; the loot window, inventory and character sheet are only ever hidden with `Hide()`.
