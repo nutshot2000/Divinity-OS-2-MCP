@@ -40,7 +40,7 @@ tool("dos2_inventory", "Your character's inventory as the inventory screen shows
     const gear = (g) => !g ? "" : ` [${g.slot}${g.rarity && g.rarity !== "Common" ? `, ${g.rarity}` : ""}` +
       (g.armour ? `, armour ${g.armour}` : "") + (g.magic_armour ? `, magic armour ${g.magic_armour}` : "") +
       (g.damage ? `, ${g.damage} ${String(g.damage_type).toLowerCase()} damage, ${g.ap} AP, range ${g.range}m` : "") + "]";
-    return text(items.map((i) => `  ${i.name}${i.amount > 1 ? ` x${i.amount}` : ""} [${i.guid}]${i.equipped ? " (equipped)" : ""}` +
+    return text((items.map((i) => `  ${i.name}${i.amount > 1 ? ` x${i.amount}` : ""} [${i.guid}]${i.equipped ? " (equipped)" : ""}` +
       gear(i.gear) + (i.gear && !i.identified ? " (unidentified: stats hidden)" : "") +
       (i.description ? `\n      ${i.description.replace(/<[^>]*>/g, "")}` : "")).join("\n") || "  empty") + hint);
   });
