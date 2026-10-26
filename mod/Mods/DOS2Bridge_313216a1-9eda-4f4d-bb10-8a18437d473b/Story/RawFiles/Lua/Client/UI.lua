@@ -288,3 +288,14 @@ function ClientHandlers.minimap()
   end
   return out
 end
+
+-- Show the party inventory screen so a watcher can follow item handling (equipping, handing items over). Only this
+-- panel: forcing the character sheet open crashed the game (a bad copy in its own data code, 2026-10-26), while the
+-- inventory screen fills in correctly. The next tool call's tidy_ui closes it again.
+local INVENTORY_UI = 116
+function ClientHandlers.show_inventory()
+  local ui = Ext.UI.GetByType(INVENTORY_UI)
+  if ui == nil then error("No inventory screen") end
+  ui:Show()
+  return { visible = ui.OF_Visible }
+end

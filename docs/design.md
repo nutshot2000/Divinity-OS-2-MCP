@@ -209,3 +209,10 @@ metres), then a stream of `update()`. On Fort Joy's first area no marker was sen
 for quests, waypoints and exits probably arrive through `add_icons`/`addIcon` once there are some to show. The explored
 outline is part of the map texture, which Lua cannot read. Not built yet: wait until a map with markers has been opened
 and record `add_icons` then, as `Client/UI.lua` does for the minimap. The minimap already gives people, enemies and exits.
+
+## Showing panels for the watcher
+
+`Ext.UI.GetByType(116):Show()` (partyInventory.swf) fills in correctly and shows both party bags, so `dos2_inventory`,
+`dos2_equip` and `dos2_give` open it and hold it for DOS2_INV_SECONDS. `Show()` on the character sheet (UI 119) crashed
+the game (access violation in a memcpy inside the sheet's own data code, VCRUNTIME140+0x1e250 from EoCApp+0x10343eb):
+do not force that one open. Equipment slots therefore are not visible while equipping, only the bags.

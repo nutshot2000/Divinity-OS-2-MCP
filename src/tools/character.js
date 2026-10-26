@@ -1,5 +1,6 @@
 // Tools: character sheet, levelling, memorised skills and party control.
 import { tool, call, text, z, guid } from "../core.js";
+import { showInventory, holdInventory } from "../director.js";
 
 const who = { character: guid.optional().describe("Party member GUID (default: the acting character)") };
 
@@ -79,6 +80,8 @@ tool("dos2_give", "Hand an item from the acting character's inventory to another
   "dos2_party action=select, then dos2_equip it.",
   { item: guid, to: guid, amount: z.number().int().min(1).optional().describe("How many of a stack (default all)") },
   async (a) => {
+    await showInventory();
     const r = await call("give", a);
+    await holdInventory();
     return text(`${r.gave}${r.amount > 1 ? ` x${r.amount}` : ""} given to ${r.to}.`);
   });

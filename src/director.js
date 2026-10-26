@@ -37,3 +37,14 @@ export async function wide() {
   if (!ENABLED) return;
   try { await cameraAt(await call("camera_point", {}, 5000), WIDE); } catch { /* cosmetic */ }
 }
+
+// Item handling is shown on screen for the watcher: the inventory panel opens before the action and stays up for a few
+// seconds after it (DOS2_INV_SECONDS, default 3; 0 turns it off). Only the inventory panel is ever forced open: showing
+// the character sheet this way crashed the game.
+export const INV_SECONDS = Number(process.env.DOS2_INV_SECONDS ?? 3);
+export async function showInventory() {
+  if (!(INV_SECONDS > 0)) return;
+  try { await call("show_inventory", {}, 5000, "client"); } catch { /* cosmetic */ }
+  await new Promise((r) => setTimeout(r, 1200)); // let it appear before anything changes
+}
+export const holdInventory = () => INV_SECONDS > 0 ? new Promise((r) => setTimeout(r, INV_SECONDS * 1000)) : Promise.resolve();

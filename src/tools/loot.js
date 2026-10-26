@@ -1,5 +1,6 @@
 // Tools: containers and loot.
 import { tool, call, text, z, guid } from "../core.js";
+import { showInventory, holdInventory } from "../director.js";
 
 const line = (i) => `  ${i.name}${i.amount > 1 ? ` x${i.amount}` : ""} [${i.guid}]` + (i.owned_by ? ` (owned by ${i.owned_by})` : "");
 
@@ -21,14 +22,21 @@ tool("dos2_loot", "List what is in a container the active character has opened a
 tool("dos2_equip", "Equip a weapon, shield or armour from your inventory by GUID (from dos2_loot). Refuses if you do " +
   "not meet its attribute requirements, as the game would.",
   { item: guid },
-  async (a) => text(`Equipped ${(await call("equip", a)).equipped}.`));
+  async (a) => {
+    await showInventory();
+    const r = await call("equip", a);
+    await holdInventory();
+    return text(`Equipped ${r.equipped}.`);
+  });
 
 tool("dos2_inventory", "Your character's inventory as the inventory screen shows it: name, amount, what is equipped, " +
   "and for gear its slot, rarity and (once identified) armour or damage, plus descriptions. Use dos2_use on an item's GUID to " +
   "drink, eat or read it, dos2_equip to wear it. equipment=true lists only weapons, armour and jewellery.",
   { equipment: z.boolean().optional().describe("Only gear (default: everything)") },
   async (a) => {
+    await showInventory();
     const items = await call("inventory", { equipment: a.equipment });
+    await holdInventory();
     const gear = (g) => !g ? "" : ` [${g.slot}${g.rarity && g.rarity !== "Common" ? `, ${g.rarity}` : ""}` +
       (g.armour ? `, armour ${g.armour}` : "") + (g.magic_armour ? `, magic armour ${g.magic_armour}` : "") +
       (g.damage ? `, ${g.damage} ${String(g.damage_type).toLowerCase()} damage, ${g.ap} AP, range ${g.range}m` : "") + "]";
