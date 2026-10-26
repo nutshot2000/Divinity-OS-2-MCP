@@ -175,3 +175,15 @@ tool("dos2_use_on", "Throw or read an item from your inventory at a target GUID 
     await call("consume_item", { template: r.template });
     return text(`Used ${r.using} (${r.skill}).\n` + show(s));
   });
+
+tool("dos2_flee", "Flee the fight: every living party member leaves combat. The game offers this ('You're in a tight spot. " +
+  "Flee, if you wish.') when the party is outnumbered, and so does the bridge: it refuses when you are not. The enemies stay " +
+  "hostile and may come after you, so move away and rest afterwards. Dead party members stay where they fell (a " +
+  "Resurrection Scroll can bring them back once it is safe).",
+  {},
+  async () => {
+    const r = await call("flee", {});
+    await caption("Fleeing!");
+    return text(`Fled: ${r.party} of you left combat against ${r.enemies} enemies. Move away from them now (dos2_move), then ` +
+      "heal and regroup; use dos2_use_on with a Resurrection Scroll on a fallen friend once it is safe.");
+  });

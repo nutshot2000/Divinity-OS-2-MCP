@@ -42,8 +42,13 @@ you see that:
 1. Stop whatever you were doing. Do not loot, explore or talk.
 2. `dos2_combat`, then play every turn: `dos2_tactics`, `dos2_attack` / `dos2_cast`, `dos2_end_turn`. Use the whole party:
    `dos2_party action=select` for each member whose turn it is.
-3. Check Source costs in `dos2_skills` ("1 Source"): a skill that needs Source does nothing at 0 Source Points.
-4. If it looks unwinnable (many enemies, split party, low HP), say so to the player instead of carrying on blindly.
+3. Watch burning and fire. Burning ticks every turn (the Red Prince burned from 47 to 0 HP in two turns) and standing in
+   burning ground keeps it going: step out of fire first, and do not breathe fire (or leave oil) on ground you stand on.
+   `dos2_tactics` shows `f` squares. A burning, wounded character should leave the fire before doing anything else.
+4. When the game says "You're in a tight spot. Flee, if you wish.", you are outnumbered: `dos2_flee` leaves combat for the
+   whole party (only allowed while outnumbered). Do it early, with HP to spare, then move away; enemies may follow.
+5. Check Source costs in `dos2_skills` ("1 Source"): a skill that needs Source does nothing at 0 Source Points.
+6. If it looks unwinnable (many enemies, split party, low HP), say so to the player instead of carrying on blindly.
 
 ## Exploring (the main loop)
 

@@ -295,3 +295,36 @@ function Handlers.consume_item(args)
   Osi.ItemTemplateRemoveFrom(args.template, me.MyGuid, 1)
   return { consumed = args.template }
 end
+
+--- Flee: the game offers it ("You're in a tight spot. Flee, if you wish.") when the party is outnumbered. Leaves combat
+--- for every living party member. Only allowed while outnumbered, like the game's own prompt; enemies stay hostile.
+function Handlers.flee()
+  local me = ActiveChar()
+  local id = combatId(me)
+  if id == nil then error("Not in combat: nothing to flee from") end
+  local enemies = 0
+  local okOrder, order = pcall(function () return Ext.Entity.GetCombat(id):GetCurrentTurnOrder() end)
+  local seen = {}
+  local function count(list)
+    for _, team in ipairs(list or {}) do
+      local c = team.Character
+      if c and not seen[c.MyGuid] then
+        seen[c.MyGuid] = true
+        if not c.Dead and Osiq("CharacterIsEnemy", me.MyGuid, c.MyGuid) == 1 then enemies = enemies + 1 end
+      end
+    end
+  end
+  if okOrder then count(order) end
+  local okNext, nextOrder = pcall(function () local cb = Ext.Entity.GetCombat(id); return cb:GetNextTurnOrder() end)
+  if okNext then count(nextOrder) end
+  local party = {}
+  for _, g in ipairs(PartyGuids()) do
+    local c = GetChar(g)
+    if c and not c.Dead then party[#party + 1] = c end
+  end
+  if enemies <= #party then
+    error("Not outnumbered (" .. enemies .. " enemies, " .. #party .. " of you alive): fight on. Fleeing is only allowed when outnumbered, as in the game.")
+  end
+  for _, c in ipairs(party) do Osi.LeaveCombat(c.MyGuid) end
+  return { fled = true, enemies = enemies, party = #party }
+end
