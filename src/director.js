@@ -76,3 +76,9 @@ export async function showSheet(tab = 0) {
   await new Promise((r) => setTimeout(r, 1200));
   return "";
 }
+
+/** A short caption over the acting character so the watcher knows what changed (overhead text; cosmetic, never fails). */
+export async function caption(text) {
+  if (!(INV_SECONDS > 0)) return;
+  try { await call("say", { text }, 5000); } catch { /* cosmetic */ }
+}

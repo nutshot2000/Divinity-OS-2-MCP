@@ -1,6 +1,6 @@
 // Tools: character sheet, levelling, memorised skills and party control.
 import { tool, call, text, z, guid } from "../core.js";
-import { showInventory, holdInventory, showSheet, INV_SECONDS } from "../director.js";
+import { showInventory, holdInventory, showSheet, caption, INV_SECONDS } from "../director.js";
 
 const who = { character: guid.optional().describe("Party member GUID (default: the acting character)") };
 
@@ -35,7 +35,12 @@ tool("dos2_level_up", "Spend one unspent point, like a + button on the character
     const pause = () => INV_SECONDS > 0 ? new Promise((r) => setTimeout(r, Math.min(INV_SECONDS, 2) * 1000)) : Promise.resolve();
     let done = 0;
     try {
-      for (let i = 0; i < (a.times ?? 1); i++) { await call("level_up", a); done++; await pause(); }
+      for (let i = 0; i < (a.times ?? 1); i++) {
+        const r = await call("level_up", a);
+        done++;
+        await caption(r.from != null ? `${a.name} ${r.from} -> ${r.to}` : `Learned talent: ${a.name}`);
+        await pause();
+      }
     } catch (e) {
       if (!done) throw e;
       return text(`Spent ${done} on ${a.name}, then: ${e.message}${hint}`);
@@ -85,6 +90,7 @@ tool("dos2_give", "Hand an item from the acting character's inventory to another
   async (a) => {
     const hint = await showInventory();
     const r = await call("give", a);
+    await caption(`Giving ${r.gave} to ${r.to}`);
     await holdInventory();
     return text(`${r.gave}${r.amount > 1 ? ` x${r.amount}` : ""} given to ${r.to}.${hint}`);
   });

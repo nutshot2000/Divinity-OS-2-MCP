@@ -102,6 +102,13 @@ function Handlers.level_up(args)
   local g = me.MyGuid
   if Osiq("CharacterIsInCombat", g) == 1 then error("The character sheet cannot be changed in combat") end
   local kind, name = args.kind, args.name
+  -- Value before and after, so the bridge can caption the change on screen for a watcher.
+  local function baseValue()
+    if kind == "attribute" then return Osiq("CharacterGetBaseAttribute", g, name) end
+    if kind == "combat" or kind == "civil" then return Osiq("CharacterGetBaseAbility", g, name) end
+    return nil
+  end
+  local before = baseValue()
   if kind == "attribute" then
     if not listHas(ATTRIBUTES, name) then error("Unknown attribute " .. tostring(name)) end
     if (Osiq("CharacterGetAttributePoints", g) or 0) < 1 then error("No attribute points to spend") end
@@ -127,7 +134,7 @@ function Handlers.level_up(args)
   else
     error("kind must be attribute, combat, civil or talent")
   end
-  return { character = NameOf(me), spent = kind, on = name }
+  return { character = NameOf(me), spent = kind, on = name, from = before, to = baseValue() }
 end
 
 --- Memorise or forget a learned skill, within the free memory slots (as dragging it on or off the skills screen).

@@ -307,7 +307,10 @@ function ClientHandlers.show_inventory()
   if ui == nil then error("No inventory screen") end
   local sheet = Ext.UI.GetByType(SHEET_UI)
   local sheetShown = false
-  if sheet ~= nil and sheetFilledIn() then sheet:Show(); sheetShown = true end
+  if sheet ~= nil and sheetFilledIn() then
+    sheet:Show(); sheetShown = true
+    pcall(function () sheet:GetRoot().stats_mc.ClickTab(0) end)   -- always the attributes tab, next to the equipment
+  end
   ui:Show()
   return { visible = ui.OF_Visible, sheet = sheetShown }
 end

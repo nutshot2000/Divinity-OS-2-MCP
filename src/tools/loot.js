@@ -1,6 +1,6 @@
 // Tools: containers and loot.
 import { tool, call, text, z, guid } from "../core.js";
-import { showInventory, holdInventory } from "../director.js";
+import { showInventory, holdInventory, caption } from "../director.js";
 
 const line = (i) => `  ${i.name}${i.amount > 1 ? ` x${i.amount}` : ""} [${i.guid}]` + (i.owned_by ? ` (owned by ${i.owned_by})` : "");
 
@@ -25,6 +25,7 @@ tool("dos2_equip", "Equip a weapon, shield or armour from your inventory by GUID
   async (a) => {
     const hint = await showInventory();
     const r = await call("equip", a);
+    await caption(`Equipping ${r.equipped}`);
     await holdInventory();
     return text(`Equipped ${r.equipped}.${hint}`);
   });
