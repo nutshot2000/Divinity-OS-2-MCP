@@ -41,6 +41,12 @@ first time a player opens them, so press I once per game session; until then the
 after each tool call. `dos2_level_up` opens the character sheet on the matching tab (attributes, combat, civil, talents) and
 spends the points one at a time, so the watcher sees each number go up.
 
+Captions: a short line floats over the acting character for each action, so a watcher can follow without reading the
+chat: walking to a person or object, opening or using things, what was taken, who is being talked to and the answer given
+(in the player's words), attacks, spells and thrown items, ending a turn, equipping, handing items over, memorising skills,
+sneaking, switching character, and each level-up point ("Finesse 10 -> 11"). Models can add their own reasons with
+`dos2_say`. `DOS2_CAPTIONS=0` turns the automatic captions off.
+
 Camera director: the camera frames the action by itself – close-ups on conversations, attacker and target in combat,
 following whoever acts on enemy turns, a closer look at chests and books, and the wide view while exploring. Set
 `DOS2_CINEMATIC=0` to turn it off.

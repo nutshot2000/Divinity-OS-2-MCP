@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { tool, call, text, z, guid } from "../core.js";
-import { focus, focusBetween, wide, MEDIUM } from "../director.js";
+import { focus, focusBetween, wide, MEDIUM, caption } from "../director.js";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // Combat log entries already shown; in a temp file too, like the dialogue mark, for one-shot CLI calls.
@@ -100,6 +100,7 @@ tool("dos2_attack", "Basic weapon attack on a target (walks into range if needed
   async (a) => {
     await focusBetween(a.target, MEDIUM);
     const r = await call("attack", a);
+    await caption(`Attacking ${r.attacking}`);
     return text(`Attacking ${r.attacking}\n` + show(await afterAction(r.ap_before)));
   });
 
@@ -110,12 +111,14 @@ tool("dos2_cast", "Use a memorised skill (id from dos2_skills) on a target GUID,
     if (a.target == null && (a.x == null || a.z == null)) throw new Error("Give a target GUID, or x and z");
     if (a.target) await focusBetween(a.target, MEDIUM);
     const r = await call("cast", a);
+    await caption(`Casting ${r.casting}`);
     return text(`Casting ${r.casting}\n` + show(await afterAction(r.ap_before)));
   });
 
 tool("dos2_end_turn", "End your turn, then wait while the other combatants act (up to ~50 s) and return the combat " +
   "status when it is your turn again or the fight is over. Call again if it is still someone else's turn.",
   {}, async () => {
+    await caption("Ending turn");
     // At 0 AP the game ends the turn itself; then there is nothing to end, only waiting to do.
     try { await call("end_turn"); } catch (e) { if (!/Not .*turn/.test(String(e.message))) throw e; }
     // The turn does not pass at once: wait for it to leave us first, or waitForTurn would return immediately.
@@ -164,6 +167,7 @@ tool("dos2_use_on", "Throw or read an item from your inventory at a target GUID 
     const before = await state();
     if (a.target) await focusBetween(a.target, MEDIUM);
     const r = await call("use_item", a);
+    await caption(`Using ${r.using}`);
     const s = await afterAction(r.ap_before);
     const cast = s.log.some((e) => e.event === "cast" && e.skill === r.skill) ||
       (await call("combat", { since: before.log_last })).log.some((e) => e.event === "cast" && e.skill === r.skill);

@@ -53,6 +53,7 @@ tool("dos2_memorise", "Memorise a learned skill (uses memory slots) or forget=tr
   { ...who, skill: z.string(), forget: z.boolean().optional() },
   async (a) => {
     const r = await call("memorise", a);
+    await caption(`${r.memorised ? "Memorising" : "Forgetting"} ${r.skill}`);
     // Free slots are recomputed by the game on a later tick; dos2_sheet shows the settled number.
     return text(`${r.skill} ${r.memorised ? "memorised" : "forgotten"}.`);
   });
@@ -63,7 +64,11 @@ tool("dos2_party", "The party: each member's level, HP, position, whether they a
   "to the acting character (dos2_move does this by itself after each walk, out of combat).",
   { action: z.enum(["list", "select", "chain", "unchain", "gather"]).optional(), character: guid.optional() },
   async (a) => {
-    if (a.action === "select") return text(`Now acting as ${(await call("party_select", a)).acting}.`);
+    if (a.action === "select") {
+      const r = await call("party_select", a);
+      await caption(`Now playing as ${r.acting}`);
+      return text(`Now acting as ${r.acting}.`);
+    }
     if (a.action === "gather") {
       const r = await call("party_gather", {});
       return text(r.sent.length ? `Sent ${r.sent.join(", ")} to the acting character.` : "Everyone is already close (or you are in combat).");
@@ -81,7 +86,11 @@ tool("dos2_party", "The party: each member's level, HP, position, whether they a
 tool("dos2_sneak", "Start (on=true) or stop sneaking with the acting character, out of combat. Sneaking characters " +
   "are harder to spot but move slowly.",
   { on: z.boolean() },
-  async (a) => text(`${(await call("sneak", a)).character} ${a.on ? "is sneaking" : "stopped sneaking"}.`));
+  async (a) => {
+    const r = await call("sneak", a);
+    await caption(a.on ? "Sneaking" : "Standing up");
+    return text(`${r.character} ${a.on ? "is sneaking" : "stopped sneaking"}.`);
+  });
 
 tool("dos2_give", "Hand an item from the acting character's inventory to another party member (their GUID from dos2_party), " +
   "like dragging it between inventories. Equipped items must be taken off first. Switch to the receiver with " +

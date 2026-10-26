@@ -15,6 +15,7 @@ tool("dos2_loot", "List what is in a container the active character has opened a
       return text(`${r.container}:\n${r.items.map(line).join("\n") || "  empty"}`);
     }
     const r = await call("loot_take", { container: a.container, items: a.take === "all" ? undefined : a.take });
+    if (r.taken.length) await caption(`Took ${r.taken.slice(0, 3).map((i) => i.name + (i.amount > 1 ? ` x${i.amount}` : "")).join(", ")}${r.taken.length > 3 ? " and more" : ""}`);
     return text(`${r.container}: took\n${r.taken.map(line).join("\n") || "  nothing"}` +
       (r.skipped_owned.length ? `\nleft (owned):\n${r.skipped_owned.map(line).join("\n")}` : ""));
   });

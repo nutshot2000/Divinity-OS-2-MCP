@@ -171,7 +171,7 @@ function Handlers.object_pos(args)
   local owner = Osiq("GetInventoryOwner", o.MyGuid)
   if owner ~= nil and owner ~= "" then error((NameOf(o) or "That") .. " is in an inventory, not on the ground") end
   local p = Pos(o)
-  return { x = p.x, z = p.z, y = p.y, dist = Dist(Pos(me), p) }
+  return { x = p.x, z = p.z, y = p.y, dist = Dist(Pos(me), p), name = NameOf(o) }
 end
 
 function Handlers.use(args)

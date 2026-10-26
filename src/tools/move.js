@@ -1,6 +1,6 @@
 // Tools: movement and interaction.
 import { tool, call, text, json, z, guid } from "../core.js";
-import { focus, wide, CLOSE } from "../director.js";
+import { focus, wide, CLOSE, caption } from "../director.js";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -52,7 +52,11 @@ async function waitForMove(event, timeoutMs, startHp, startedInCombat = false, s
  *  allowHazards, or when no safe route can be planned (e.g. stairs that link to another level), it falls back to the
  *  game's pathfinding but still stops on damage. */
 export async function walkTo({ x, z, target, run = true, timeoutMs = 30000, allowHazards = false }) {
-  if (target != null) ({ x, z } = await call("object_pos", { guid: target }));
+  if (target != null) {
+    const p = await call("object_pos", { guid: target });
+    ({ x, z } = p);
+    if (p.name && p.dist > 3) await caption(`Heading to ${p.name}`);
+  }
   const before = await call("move_status", { event: "" });
   const startHp = before.hp;
   let route = null;
@@ -121,6 +125,7 @@ tool("dos2_use", "Use an item with the active character: open a container or doo
       last = now;
     }
     const started = await call("use", { item: a.item });
+    await caption(started.tags.includes("container") ? `Opening ${started.using}` : near.carried ? `Using ${started.using}` : `${started.using}`);
     const deadline = Date.now() + (a.timeout ?? 20) * 1000;
     let s = {};
     while (Date.now() < deadline) {

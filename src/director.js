@@ -79,6 +79,6 @@ export async function showSheet(tab = 0) {
 
 /** A short caption over the acting character so the watcher knows what changed (overhead text; cosmetic, never fails). */
 export async function caption(text) {
-  if (!(INV_SECONDS > 0)) return;
+  if (process.env.DOS2_CAPTIONS === "0") return; // DOS2_CAPTIONS=0 turns all on-screen captions off
   try { await call("say", { text }, 5000); } catch { /* cosmetic */ }
 }

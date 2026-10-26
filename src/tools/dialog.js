@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { tool, call, text, z, guid } from "../core.js";
 import { walkTo } from "./move.js";
-import { focusBetween, wide, CLOSE } from "../director.js";
+import { focusBetween, wide, CLOSE, caption } from "../director.js";
 
 const DIALOG_UI = 14;
 const client = (cmd, args = {}) => call(cmd, args, 15000, "client");
@@ -71,6 +71,11 @@ tool("dos2_answer", "Choose a dialogue answer by its number from dos2_dialog. Re
   "the next real choice.",
   { answer: z.number().int().min(0), auto_continue: z.boolean().optional().describe("Default true") },
   async (a) => {
+    // Show which answer is being given, in the player's words, over the character.
+    try {
+      const { answers } = parse((await client("dialog_log", { since: 0 })).snapshots);
+      if (answers[a.answer]) await caption(`"${answers[a.answer].slice(0, 90)}"`);
+    } catch { /* cosmetic */ }
     await client("ui_call", { ui: DIALOG_UI, fn: "QuestionPressed", args: [a.answer] });
     let d = await settle();
     const all = { ...d, lines: [...d.lines] };
@@ -128,6 +133,7 @@ tool("dos2_talk", "Walk up to a character and start talking, as clicking on them
     if (m.refused || m.hurt) return text(`Did not reach them: ${m.outcome}`);
     await focusBetween(a.target, CLOSE); // close-up on both speakers
     const r = await call("talk", { target: a.target });
+    await caption(`Talking to ${r.talking_to}`);
     const d = await settle();
     if (!d.open && !d.lines.length) await wide();
     if (!d.open && !d.lines.length) return text(`${r.talking_to} did not start a conversation (nothing to say, or busy).`);
