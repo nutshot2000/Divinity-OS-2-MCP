@@ -67,8 +67,23 @@ async function send(cmd, args, timeoutMs, side) {
   const files = FILES[side];
   const id = ++seq;
   const tmp = join(dir, files.request + ".tmp");
-  writeFileSync(tmp, JSON.stringify({ seq: id, cmd, args }));
-  renameSync(tmp, join(dir, files.request));
+  const target = join(dir, files.request);
+  const body = JSON.stringify({ seq: id, cmd, args });
+  // OneDrive (the Osiris Data folder lives under it) or the game can hold the file for a moment, which made the rename fail
+  // with EPERM/EBUSY. Retry briefly, then fall back to writing the file in place.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      writeFileSync(tmp, body);
+      renameSync(tmp, target);
+      break;
+    } catch (e) {
+      if (attempt >= 6 || !/EPERM|EBUSY|EACCES/.test(String(e.code ?? e.message))) {
+        if (attempt >= 6 && /EPERM|EBUSY|EACCES/.test(String(e.code ?? e.message))) { writeFileSync(target, body); break; }
+        throw e;
+      }
+      await new Promise((r) => setTimeout(r, 50 * (attempt + 1)));
+    }
+  }
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     await sleep(50);
