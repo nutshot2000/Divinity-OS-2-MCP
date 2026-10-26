@@ -311,7 +311,8 @@ end
 
 --- The active character's inventory, as the inventory screen shows it: name, amount, equipped, type and the item's
 --- description. Unidentified items stay unidentified.
-function Handlers.inventory()
+function Handlers.inventory(args)
+  args = args or {}
   local me = ActiveChar()
   -- Ask the game what is in each equipment slot (an item's Slot field is also its bag position when carried).
   local equipped = {}
@@ -333,9 +334,37 @@ function Handlers.inventory()
       end
       local identified = true
       pcall(function () identified = it.Stats == nil or it.Stats.IsIdentified ~= 0 end)
-      out[#out + 1] = { name = NameOf(it) or stats, guid = it.MyGuid, amount = it.Amount or 1,
-        equipped = equipped[BareGuid(it.MyGuid)] == true, stats = identified and stats or "(unidentified)",
-        description = identified and desc or nil }
+      -- What the item's tooltip would show: slot, and for identified gear its base armour or damage. Unidentified
+      -- items keep their numbers hidden, as in the game.
+      local gear = nil
+      pcall(function ()
+        local st = it.Stats
+        if st ~= nil and st.Slot ~= nil and st.Slot ~= "" and st.Slot ~= "None" then
+          gear = { slot = st.Slot, rarity = st.Rarity, level = st.Level }
+          if identified then
+            local d = st.DynamicStats[1]
+            -- A weapon's stat block has no ArmorValue (reading it throws) and an armour's has no damage: read safely.
+            local function field(name)
+              local okf, v = pcall(function () return d[name] end)
+              return okf and v or nil
+            end
+            local armour, magic, maxd, mind = field("ArmorValue"), field("MagicArmorValue"), field("MaxDamage"), field("MinDamage")
+            if armour and armour > 0 then gear.armour = armour end
+            if magic and magic > 0 then gear.magic_armour = magic end
+            if maxd and maxd > 0 then
+              gear.damage = mind == maxd and tostring(maxd) or (tostring(mind) .. "-" .. tostring(maxd))
+              gear.damage_type = tostring(field("DamageType"))
+              gear.ap = field("AttackAPCost")
+              gear.range = Round(field("WeaponRange") or 0)
+            end
+          end
+        end
+      end)
+      if not args.equipment or gear then
+        out[#out + 1] = { name = NameOf(it) or stats, guid = it.MyGuid, amount = it.Amount or 1,
+          equipped = equipped[BareGuid(it.MyGuid)] == true, stats = identified and stats or "(unidentified)",
+          description = identified and desc or nil, gear = gear, identified = identified }
+      end
     end
   end
   table.sort(out, function (a, b) return a.name < b.name end)
