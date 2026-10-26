@@ -25,6 +25,13 @@ watching. This file is sent to you as the server's instructions; `dos2_help` ret
 2. `dos2_status` – who you are, HP, where you are, in combat or dialogue.
 3. If `in_dialog` is true: `dos2_dialog`. If `in_combat` is true: `dos2_combat`.
 
+## XP and level-ups
+
+After every tool the bridge appends `[+N XP for <name> (now X).]` when experience was gained, and
+`[LEVEL UP: <name> has N points to spend ...]` as soon as any party member has unspent attribute, ability or talent
+points. When you see the level-up note and are out of combat, spend the points before doing anything else:
+`dos2_sheet`, then `dos2_level_up` (and `dos2_memorise` for new skills).
+
 ## Combat comes first
 
 A fight can start at any moment, including while you are doing something else (walking, opening a chest, talking). The

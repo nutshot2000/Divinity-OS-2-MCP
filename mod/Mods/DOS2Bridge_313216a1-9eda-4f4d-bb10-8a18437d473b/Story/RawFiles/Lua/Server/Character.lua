@@ -242,3 +242,18 @@ function Handlers.give(args)
   Osi.ItemToInventory(item.MyGuid, to.MyGuid, amount, 0, 0)
   return { gave = NameOf(item), amount = amount, to = NameOf(to) }
 end
+
+--- Experience and unspent points of every party member, so the bridge can announce XP gains and level-ups by itself.
+function Handlers.progress()
+  local out = {}
+  for _, g in ipairs(PartyGuids()) do
+    local c = GetChar(g)
+    if c then
+      local gg = c.MyGuid
+      out[#out + 1] = { name = NameOf(c), guid = gg, xp = c.Stats.Experience, level = Osiq("CharacterGetLevel", gg),
+        points = (Osiq("CharacterGetAttributePoints", gg) or 0) + (Osiq("CharacterGetAbilityPoints", gg) or 0) +
+          (Osiq("CharacterGetCivilAbilityPoints", gg) or 0) + (Osiq("CharacterGetTalentPoints", gg) or 0) }
+    end
+  end
+  return out
+end

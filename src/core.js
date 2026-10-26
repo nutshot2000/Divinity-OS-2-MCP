@@ -32,6 +32,33 @@ const COMBAT_BANNER = "\n\n[!! IN COMBAT !! Stop exploring, looting and talking.
   "enemies free turns, and wandering off or opening containers mid-fight is how characters die. If it looks " +
   "unwinnable, say so and tell the player.]";
 
+// XP gains and level-ups are announced after tool calls (nothing else tells the player). The last XP seen is kept in a temp
+// file too, because one-shot CLI calls start a fresh server each time.
+import { readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+const XP_MARK = join(tmpdir(), "dos2-bridge-xp-mark.json");
+let lastXp = (() => { try { return JSON.parse(readFileSync(XP_MARK, "utf8")); } catch { return {}; } })();
+async function progressNote() {
+  let party;
+  try { party = await call("progress", {}, 5000); } catch { return ""; }
+  let note = "";
+  const now = {};
+  for (const m of party) {
+    now[m.guid] = m.xp;
+    const before = lastXp[m.guid];
+    if (before != null && m.xp > before) note += `
+[+${m.xp - before} XP for ${m.name} (now ${m.xp}).]`;
+  }
+  const spend = party.filter((m) => m.points > 0);
+  if (spend.length) note += `
+[LEVEL UP: ${spend.map((m) => `${m.name} has ${m.points} point${m.points > 1 ? "s" : ""} to spend`).join("; ")}. ` +
+    "Out of combat, use dos2_sheet and dos2_level_up (attributes, abilities, talents) and dos2_memorise for new skills.]";
+  lastXp = now;
+  try { writeFileSync(XP_MARK, JSON.stringify(now)); } catch { /* best effort */ }
+  return note;
+}
+
 /** After every tool: dismiss tutorial popups (they block play) and report their text, and close panels left open on
  *  screen (loot windows from opening containers, inventory, journal, ...), so nothing piles up while playing. */
 async function tutorialNote() {
@@ -56,6 +83,7 @@ export function tool(name, description, shape, fn) {
       result = fail(String(e.message || e));
     }
     let note = await tutorialNote();
+    note += await progressNote();
     if (!SHOWS_COMBAT.has(name) && await inCombat()) note += COMBAT_BANNER;
     if (note) {
       const first = result.content.find((c) => c.type === "text");
