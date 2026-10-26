@@ -94,6 +94,7 @@ tool("dos2_move", "Walk the active character (the party follows) to a point or a
     const r = await walkTo({ x: a.x, z: a.z, target: a.target, run: a.run ?? true, allowHazards: a.allow_hazards,
       timeoutMs: (a.timeout ?? 30) * 1000 });
     if (r.refused) return text(r.outcome);
+    call("party_gather", {}).catch(() => {}); // the rest of the party follows (out of combat)
     return text(`${r.outcome}: now at ${r.x},${r.z}` + (r.dist_to_goal != null ? `, ${r.dist_to_goal}m from the goal` : "") +
       (r.hp != null ? `, ${r.hp} HP` : ""));
   });

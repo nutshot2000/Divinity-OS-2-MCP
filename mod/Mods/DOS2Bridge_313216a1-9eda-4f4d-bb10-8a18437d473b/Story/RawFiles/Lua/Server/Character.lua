@@ -203,3 +203,19 @@ function Handlers.sneak(args)
   end
   return { character = NameOf(me), sneaking = args.on and true or false }
 end
+
+--- Send every other living party member walking to the acting character (outside combat). The game only moves chained
+--- members along when the player orders it, so the bridge does it after each walk.
+function Handlers.party_gather(args)
+  local acting = ActiveChar()
+  local sent = {}
+  if Osiq("CharacterIsInCombat", acting.MyGuid) == 1 then return { sent = sent } end
+  for _, g in ipairs(PartyGuids()) do
+    local c = GetChar(g)
+    if c and c.MyGuid ~= acting.MyGuid and not c.Dead and Dist(Pos(c), Pos(acting)) > (args.within or 4) then
+      Osi.CharacterMoveTo(c.MyGuid, acting.MyGuid, 1, "", 0)
+      sent[#sent + 1] = NameOf(c)
+    end
+  end
+  return { sent = sent }
+end

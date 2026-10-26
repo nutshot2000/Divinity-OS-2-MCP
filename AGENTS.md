@@ -108,7 +108,8 @@ is gone. Watch surfaces in `dos2_grid` and allies in area skills.
 the character and spend them with `dos2_level_up` (out of combat). New skill books: `dos2_use` the book to learn it,
 then `dos2_memorise`.
 
-**Party.** Once others join, `dos2_party` lists them; `action=select` makes the tools act as that member (in combat,
+**Party.** Other members only follow when told to: `dos2_move` sends them after the leader by itself (out of combat),
+and `dos2_party action=gather` does it on demand. Once others join, `dos2_party` lists them; `action=select` makes the tools act as that member (in combat,
 select whoever's turn it is), `chain`/`unchain` moves them together or apart.
 
 **Saving.** The bridge cannot save. Quicksave is F5 in the game window: ask the watching player, or with screen control

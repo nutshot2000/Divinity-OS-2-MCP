@@ -50,10 +50,15 @@ tool("dos2_memorise", "Memorise a learned skill (uses memory slots) or forget=tr
 
 tool("dos2_party", "The party: each member's level, HP, position, whether they are the one the tools act with, " +
   "chained to them, or sneaking. action=select picks who acts (moves, attacks, skills, talking, looting); " +
-  "action=chain / unchain links a member to the acting character or lets them move alone.",
-  { action: z.enum(["list", "select", "chain", "unchain"]).optional(), character: guid.optional() },
+  "action=chain / unchain links a member to the acting character or lets them move alone; action=gather sends everyone " +
+  "to the acting character (dos2_move does this by itself after each walk, out of combat).",
+  { action: z.enum(["list", "select", "chain", "unchain", "gather"]).optional(), character: guid.optional() },
   async (a) => {
     if (a.action === "select") return text(`Now acting as ${(await call("party_select", a)).acting}.`);
+    if (a.action === "gather") {
+      const r = await call("party_gather", {});
+      return text(r.sent.length ? `Sent ${r.sent.join(", ")} to the acting character.` : "Everyone is already close (or you are in combat).");
+    }
     if (a.action === "chain" || a.action === "unchain") {
       const r = await call("party_chain", { character: a.character, chain: a.action === "chain" });
       return text(`${r.character} ${r.chained ? "chained" : "unchained"}.`);
