@@ -59,3 +59,20 @@ export async function showInventory() {
   return "";
 }
 export const holdInventory = () => INV_SECONDS > 0 ? new Promise((r) => setTimeout(r, INV_SECONDS * 1000)) : Promise.resolve();
+
+/** Show the character sheet on a tab (0 attributes, 1 combat abilities, 2 civil, 3 talents) while points are spent. Returns
+ *  "" or, once per run, a hint that the player has to open the sheet once (press I) before the bridge can. */
+let sheetHinted = false;
+export async function showSheet(tab = 0) {
+  if (!(INV_SECONDS > 0)) return "";
+  try { await call("show_sheet", { tab }, 5000, "client"); }
+  catch (e) {
+    if (/No character sheet/.test(String(e.message)) && !sheetHinted) {
+      sheetHinted = true;
+      return "\n[The character sheet is not shown on screen: press I once in the game, and from then on it opens by itself.]";
+    }
+    return "";
+  }
+  await new Promise((r) => setTimeout(r, 1200));
+  return "";
+}

@@ -38,7 +38,8 @@ MCP server's environment to change this (`0` = close at once, for faster unwatch
 `dos2_inventory`, `dos2_equip` and `dos2_give` open what the I key opens (the character sheet with the equipment slots, and
 the party bags) and keep it up for `DOS2_INV_SECONDS` (default 3, `0` = off). The game only creates these screens the
 first time a player opens them, so press I once per game session; until then the tools say so. They are hidden again
-after each tool call.
+after each tool call. `dos2_level_up` opens the character sheet on the matching tab (attributes, combat, civil, talents) and
+spends the points one at a time, so the watcher sees each number go up.
 
 Camera director: the camera frames the action by itself – close-ups on conversations, attacker and target in combat,
 following whoever acts on enemy turns, a closer look at chests and books, and the wide view while exploring. Set

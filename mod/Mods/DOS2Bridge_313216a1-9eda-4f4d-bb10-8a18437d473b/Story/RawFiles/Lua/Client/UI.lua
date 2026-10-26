@@ -311,3 +311,14 @@ function ClientHandlers.show_inventory()
   ui:Show()
   return { visible = ui.OF_Visible, sheet = sheetShown }
 end
+
+--- Show the character sheet on one of its tabs (0 attributes, 1 combat abilities, 2 civil abilities, 3 talents, 4 traits)
+--- for a watcher, e.g. while points are being spent. Same guard as show_inventory: only once the game has filled the sheet
+--- in. ClickTab is the sheet's own tab-button handler (selectTab alone changes only the title).
+function ClientHandlers.show_sheet(args)
+  local sheet = Ext.UI.GetByType(SHEET_UI)
+  if sheet == nil or not sheetFilledIn() then error("No character sheet") end
+  sheet:Show()
+  pcall(function () sheet:GetRoot().stats_mc.ClickTab(args.tab or 0) end)
+  return { visible = sheet.OF_Visible, tab = args.tab or 0 }
+end

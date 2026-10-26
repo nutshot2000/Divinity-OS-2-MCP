@@ -220,3 +220,7 @@ once its data has arrived (`updateItems` in the UI log), and the inventory scree
 again with `hideUI`: `closeUI` seems to destroy them (the screens vanished from the UI list and the I key stopped
 working until a restart). Do not press hotbar buttons through `hotbarBtnPressed` either: it left the game with the I
 button stuck on, nothing drawn, and eventually unresponsive.
+
+Tabs: the sheet's own tab-button handler is `Ext.UI.GetByType(119):GetRoot().stats_mc.ClickTab(n)` (0 attributes, 1 combat
+abilities, 2 civil abilities, 3 talents, 4 traits). `selectTab(n)` only changes the title and tab highlight, not the panel.
+`show_sheet` in `Client/UI.lua` uses ClickTab; `dos2_level_up` shows the matching tab while it spends points.

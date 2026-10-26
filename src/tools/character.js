@@ -1,6 +1,6 @@
 // Tools: character sheet, levelling, memorised skills and party control.
 import { tool, call, text, z, guid } from "../core.js";
-import { showInventory, holdInventory } from "../director.js";
+import { showInventory, holdInventory, showSheet, INV_SECONDS } from "../director.js";
 
 const who = { character: guid.optional().describe("Party member GUID (default: the acting character)") };
 
@@ -30,14 +30,17 @@ tool("dos2_level_up", "Spend one unspent point, like a + button on the character
   { ...who, kind: z.enum(["attribute", "combat", "civil", "talent"]), name: z.string(),
     times: z.number().int().min(1).max(10).optional().describe("Spend this many points on it (default 1)") },
   async (a) => {
+    // The character sheet opens on the right tab so the watcher sees the number go up, one point at a time.
+    const hint = await showSheet({ attribute: 0, combat: 1, civil: 2, talent: 3 }[a.kind] ?? 0);
+    const pause = () => INV_SECONDS > 0 ? new Promise((r) => setTimeout(r, Math.min(INV_SECONDS, 2) * 1000)) : Promise.resolve();
     let done = 0;
     try {
-      for (let i = 0; i < (a.times ?? 1); i++) { await call("level_up", a); done++; }
+      for (let i = 0; i < (a.times ?? 1); i++) { await call("level_up", a); done++; await pause(); }
     } catch (e) {
       if (!done) throw e;
-      return text(`Spent ${done} on ${a.name}, then: ${e.message}`);
+      return text(`Spent ${done} on ${a.name}, then: ${e.message}${hint}`);
     }
-    return text(`Spent ${done} ${a.kind} point${done > 1 ? "s" : ""} on ${a.name}.`);
+    return text(`Spent ${done} ${a.kind} point${done > 1 ? "s" : ""} on ${a.name}.${hint}`);
   });
 
 tool("dos2_memorise", "Memorise a learned skill (uses memory slots) or forget=true to unmemorise it, out of combat. " +
