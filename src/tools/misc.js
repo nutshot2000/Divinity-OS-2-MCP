@@ -53,7 +53,7 @@ tool("dos2_minimap", "What the minimap in the corner shows: the people marked on
       const kr = (anchor.mx * vx - anchor.my * vz) / d2, ki = (anchor.my * vx + anchor.mx * vz) / d2;
       const k2 = kr * kr + ki * ki;
       const ur = (i.mx * kr + i.my * ki) / k2, ui = (i.my * kr - i.mx * ki) / k2;
-      return `  marker (stairs or an exit, no name) at about ${r1(me.x + ur)},${r1(me.z - ui)}`;
+      return `  marker (exit or point of interest, no name) at about ${r1(me.x + ur)},${r1(me.z - ui)}`;
     });
     return text((lines.join("\n") || "  nobody marked") + (marks.length ? "\n" + marks.join("\n") : "") +
       (me ? `\nyou: ${r1(me.x)},${r1(me.z)}` : ""));

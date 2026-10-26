@@ -66,7 +66,7 @@ local losWorks = nil  -- nil until the first raycast tells us whether the vision
 --- invisibility); a vision-grid raycast if that query fails. Anything under fog of war is never visible.
 local function inSight(me, obj)
   local p = obj.WorldPos
-  if Shrouded(p[1], p[3]) then return false end
+  if Shrouded(p[1], p[3], p[2]) then return false end
   local seen = Osiq("CharacterCanSee", me.MyGuid, obj.MyGuid)
   if seen ~= nil then losWorks = true; return seen == 1 end
   local vision = Ext.Entity.GetVisionGrid and Ext.Entity.GetVisionGrid()
@@ -398,7 +398,7 @@ function Handlers.camera_point(args)
     local grid = Ext.Entity.GetAiGrid()
     -- Off the map the fog-of-war query says "not shrouded"; require a real map cell as well.
     if grid == nil or GridCell(grid, args.x, args.z) == nil then error("That spot is off the map") end
-    if Shrouded(args.x, args.z) then error("That spot is unexplored: the camera cannot look there") end
+    if Unexplored(args.x, args.z) then error("That spot is unexplored: the camera cannot look there") end
     return { x = args.x, y = GridHeight(grid, args.x, args.z) or me.WorldPos[2], z = args.z }
   end
   local p = Pos(me)

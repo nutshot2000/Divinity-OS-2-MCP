@@ -44,6 +44,21 @@ watching. This file is sent to you as the server's instructions; `dos2_help` ret
    - "dialogue started" – use `dos2_dialog`.
    - "combat started" – use `dos2_combat`.
 
+## Big areas: do not wander, use dos2_explore
+
+In a large area (a beach, a town, a fort) you only see about 14 m around you, and it is easy to walk around a bit and
+end up back where you started. `dos2_explore` fixes that. It remembers everywhere you have stood and lists the nearest
+edges of the unexplored (`?`) ground by walking distance and compass direction, each with a ready `dos2_move x= z=`:
+
+1. `dos2_explore` – pick the nearest edge (or one in a direction that makes sense).
+2. `dos2_move` there, then `dos2_look`: open containers, loot bodies, read notes, talk to people (`dos2_minimap`
+   shows who is about).
+3. `dos2_explore` again. Repeat until it says no edges are left; "% stood on" shows how much you have covered.
+
+Edges you already stood beside are listed apart as "not a way on". If you notice you are in the same place twice,
+stop and call `dos2_explore` instead of picking a direction by feel. When it reports none, the way on is a door, stairs
+or ladder you have not used, a locked or fire-blocked route, or somewhere beyond the search radius.
+
 ## Leaving an area
 
 Stairs, ladders and hatches can end the area for good: the game may play its story and move you on within seconds,

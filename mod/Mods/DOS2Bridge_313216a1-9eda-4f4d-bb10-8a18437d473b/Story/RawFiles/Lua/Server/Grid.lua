@@ -9,7 +9,7 @@ local LEGEND = {
 }
 
 local function cellChar(grid, x, z)
-  if Shrouded(x, z) then return "?" end  -- fog of war: the player has not seen it
+  if Unexplored(x, z) then return "?" end  -- not seen yet (see Explore.lua): shows nothing about it
   local info = GridCell(grid, x, z)
   if info == nil then return " " end
   for _, entry in ipairs(LEGEND) do
@@ -21,6 +21,7 @@ end
 function Handlers.grid(args)
   local grid = Ext.Entity.GetAiGrid()
   if grid == nil then error("No AI grid: is a level loaded?") end
+  RecordVisit()
   local me = ActiveChar()
   local p = Pos(me)
   -- Whole-metre centre so rows and columns line up with the 10 m ruler.

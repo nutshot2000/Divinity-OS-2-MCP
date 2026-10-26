@@ -13,8 +13,15 @@ function Osiq(name, ...)
 end
 
 --- Fog of war: true if the point is still shrouded (unexplored). Unknown counts as not shrouded.
-function Shrouded(x, z)
-  return Osiq("IsShrouded", x, z, 0.5) == 1
+--- Fog of war at a point. The Osiris query takes (x, y, z): it was called as (x, z, 0.5) for a long time, which asked
+--- about the wrong place and almost never said "shrouded". y is the ground height from the AI grid unless given (an
+--- object's own position passes its y). A point off the map counts as shrouded: nothing is known there.
+function Shrouded(x, z, y)
+  if y == nil then
+    y = GridHeight(Ext.Entity.GetAiGrid(), x, z)
+    if y == nil then return true end
+  end
+  return Osiq("IsShrouded", x, y, z) == 1
 end
 
 function Round(v, places)

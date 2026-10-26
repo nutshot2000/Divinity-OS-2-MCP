@@ -52,7 +52,8 @@ character's head), keep the pace up, and prefer the text tools over screenshots.
 |--|--|
 | `dos2_status` | See the party: position, HP, armour, AP, level, in combat/dialogue |
 | `dos2_look` | List characters and items in sight, nearest first, with GUIDs and tags (enemy, container, locked, ...) |
-| `dos2_grid` | Draw an ASCII map: `#` blocked, `.` walkable, `d` door, `f` fire, `p` poison, `o` oil, `w`/`~` water, `?` unexplored |
+| `dos2_grid` | Draw an ASCII map: `#` blocked, `.` walkable, `d` door, `f` fire, `p` poison, `o` oil, `w`/`~` water, `?` not seen yet (beyond ~14 m of anywhere you have stood) |
+| `dos2_explore` | Where to go next in a big area: nearest unexplored edges with distance, direction and a ready `dos2_move`; remembers where you have been |
 | `dos2_move` | Walk to x,z or a GUID along a route that avoids fire, poison and other hazards; stops at once on damage; refuses if every route crosses a hazard (`allow_hazards=true` to go anyway) |
 | `dos2_inventory` | List your inventory with descriptions; `dos2_use` an item to drink, eat or read it |
 | `dos2_use` | Use an item: open containers and doors, pull levers, take stairs and ladders (walks there first) |
@@ -86,7 +87,7 @@ Coordinates are metres on the ground plane: `x` and `z`. Height `y` is read from
 ## How to play
 
 **Exploring.** Loop: `dos2_status` → `dos2_look` (and `dos2_grid` when the route matters) → ONE action → read the
-result. "stopped" from `dos2_move` means blocked or unreachable: look again and pick another route or a closer point.
+result. In a big area use `dos2_explore` to choose where to go, rather than wandering. "stopped" from `dos2_move` means blocked or unreachable: look again and pick another route or a closer point.
 Use `dos2_say` to share what you are thinking before you act.
 
 **Talking.** `dos2_talk` a character, then `dos2_answer` until the conversation ends. Conversations also start on

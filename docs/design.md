@@ -189,3 +189,13 @@ stairs. Their minimap x,y are screen units that rotate with the camera and chang
 scale with the y axis flipped. One named icon (known ground offset v, minimap offset w) fixes it: K = w / conj(v) as
 complex numbers, and a marker m is on the ground at conj(m / K) from the player. `dos2_minimap` does this; it is
 accurate to about 0.3 m and needs one other person on the minimap.
+
+## Fog of war: what the game really has
+
+`Osi.IsShrouded` takes `(x, y, z)`. The bridge called it as `(x, z, 0.5)` for a long time, which asked about the wrong
+point, so `?` never appeared on `dos2_grid` and the fog filters did nothing. With the correct call it reports 0 for the
+whole of Fort Joy (a sample over the full AI grid found no shrouded cell outdoors): DOS2's world view has no black fog
+there; only the minimap uncovers as you walk, and that mask is not readable from Lua. So `Server/Explore.lua` keeps its
+own record: the character's cell each second per level, with everything within 14 m marked seen. `Unexplored(x, z)` (not
+seen, or really shrouded) now drives the `?` on `dos2_grid`, the camera's "unexplored" refusal and `dos2_explore`.
+Open question: interiors with real shroud (cellars) were not tested; `Shrouded` is still checked for them.
