@@ -212,7 +212,11 @@ and record `add_icons` then, as `Client/UI.lua` does for the minimap. The minima
 
 ## Showing panels for the watcher
 
-`Ext.UI.GetByType(116):Show()` (partyInventory.swf) fills in correctly and shows both party bags, so `dos2_inventory`,
-`dos2_equip` and `dos2_give` open it and hold it for DOS2_INV_SECONDS. `Show()` on the character sheet (UI 119) crashed
-the game (access violation in a memcpy inside the sheet's own data code, VCRUNTIME140+0x1e250 from EoCApp+0x10343eb):
-do not force that one open. Equipment slots therefore are not visible while equipping, only the bags.
+The I key opens two screens together: the character sheet (UI 119, equipment slots) and the party inventory
+(UI 116, both bags). Neither exists until the player has opened it once in a session (`Ext.UI.GetByType` returns nil).
+`Show()` on a sheet that the game has never filled in crashed the game (access violation in a memcpy in the sheet's
+own data code, VCRUNTIME140+0x1e250 from EoCApp+0x10343eb), so `show_inventory` in `Client/UI.lua` shows the sheet only
+once its data has arrived (`updateItems` in the UI log), and the inventory screen whenever it exists. Both are hidden
+again with `hideUI`: `closeUI` seems to destroy them (the screens vanished from the UI list and the I key stopped
+working until a restart). Do not press hotbar buttons through `hotbarBtnPressed` either: it left the game with the I
+button stuck on, nothing drawn, and eventually unresponsive.

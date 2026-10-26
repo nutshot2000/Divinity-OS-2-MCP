@@ -39,8 +39,8 @@ export async function wide() {
 }
 
 // Item handling is shown on screen for the watcher: the inventory panel opens before the action and stays up for a few
-// seconds after it (DOS2_INV_SECONDS, default 3; 0 turns it off). Only the inventory panel is ever forced open: showing
-// the character sheet this way crashed the game.
+// seconds after it (DOS2_INV_SECONDS, default 3; 0 turns it off). The mod shows the character sheet too, but only once the game has
+// filled it in (forcing it open earlier crashed the game).
 export const INV_SECONDS = Number(process.env.DOS2_INV_SECONDS ?? 3);
 let inventoryHinted = false;
 /** Opens the inventory screen for the watcher. Returns "" or, once per run, a hint when the game has not created that

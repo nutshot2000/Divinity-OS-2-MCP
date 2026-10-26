@@ -35,9 +35,10 @@ and plays blind (no story or puzzle knowledge from training data). See [PLAYBOOK
 Watching: notes and books stay on screen for a few seconds (3 s plus ~1 s per 40 characters, up to 12 s) and loot
 windows for 3 s before they close, so the viewer can read them. Set `DOS2_READ_SECONDS` / `DOS2_LOOT_SECONDS` in the
 MCP server's environment to change this (`0` = close at once, for faster unwatched runs). Item handling is shown too:
-`dos2_inventory`, `dos2_equip` and `dos2_give` open the inventory screen (both party bags) and keep it up for
-`DOS2_INV_SECONDS` (default 3, `0` = off). Only the inventory screen is ever forced open: opening the character sheet
-from the mod crashed the game.
+`dos2_inventory`, `dos2_equip` and `dos2_give` open what the I key opens (the character sheet with the equipment slots, and
+the party bags) and keep it up for `DOS2_INV_SECONDS` (default 3, `0` = off). The game only creates these screens the
+first time a player opens them, so press I once per game session; until then the tools say so. They are hidden again
+after each tool call.
 
 Camera director: the camera frames the action by itself – close-ups on conversations, attacker and target in combat,
 following whoever acts on enemy turns, a closer look at chests and books, and the wide view while exploring. Set

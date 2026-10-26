@@ -154,7 +154,7 @@ function ClientHandlers.tidy_ui()
         -- The loot window and the inventory screen are only hidden: closing the loot window with closeUI left the game's
         -- container state dangling and the next container opened crashed the client (six crashes), and closeUI seems to
         -- destroy the inventory screen, so it cannot be shown again. Everything else gets the proper close first.
-        local calls = (file == "containerInventory.swf" or file == "partyInventory.swf") and { "hideUI" } or CLOSE_CALLS
+        local calls = (file == "containerInventory.swf" or file == "partyInventory.swf" or file == "characterSheet.swf") and { "hideUI" } or CLOSE_CALLS
         for _, fn in ipairs(calls) do
           pcall(function () ui:ExternalInterfaceCall(fn) end)
           if not isVisible(ui) then break end
@@ -290,13 +290,24 @@ function ClientHandlers.minimap()
   return out
 end
 
--- Show the party inventory screen so a watcher can follow item handling (equipping, handing items over). Only this
--- panel: forcing the character sheet open crashed the game (a bad copy in its own data code, 2026-10-26), while the
--- inventory screen fills in correctly. The next tool call's tidy_ui closes it again.
-local INVENTORY_UI = 116
+-- Show the inventory the way the I key does: the character sheet (equipment slots) on the left and the party bags on the
+-- right, so a watcher can follow item handling. The inventory screen can always be shown. The character sheet crashed the
+-- game when forced open before the game had ever filled it in (a bad copy in its own data code, 2026-10-26), so it is only
+-- shown once the game has sent it its data (updateItems logged), i.e. after the player has pressed I once. The next tool
+-- call's tidy_ui hides both again (hideUI: closing them with closeUI seems to destroy them).
+local INVENTORY_UI, SHEET_UI = 116, 119
+local function sheetFilledIn()
+  for _, e in ipairs(UILog) do
+    if e.ui == SHEET_UI and e.fn == "updateItems" then return true end
+  end
+  return false
+end
 function ClientHandlers.show_inventory()
   local ui = Ext.UI.GetByType(INVENTORY_UI)
   if ui == nil then error("No inventory screen") end
+  local sheet = Ext.UI.GetByType(SHEET_UI)
+  local sheetShown = false
+  if sheet ~= nil and sheetFilledIn() then sheet:Show(); sheetShown = true end
   ui:Show()
-  return { visible = ui.OF_Visible }
+  return { visible = ui.OF_Visible, sheet = sheetShown }
 end
