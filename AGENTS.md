@@ -55,9 +55,10 @@ character's head), keep the pace up, and prefer the text tools over screenshots.
 | `dos2_grid` | Draw an ASCII map: `#` blocked, `.` walkable, `d` door, `f` fire, `p` poison, `o` oil, `w`/`~` water, `?` not seen yet (beyond ~14 m of anywhere you have stood) |
 | `dos2_explore` | Where to go next in a big area: nearest unexplored edges with distance, direction and a ready `dos2_move`; remembers where you have been |
 | `dos2_move` | Walk to x,z or a GUID along a route that avoids fire, poison and other hazards; stops at once on damage; refuses if every route crosses a hazard (`allow_hazards=true` to go anyway) |
-| `dos2_inventory` | List your inventory with descriptions; `dos2_use` an item to drink, eat or read it |
+| `dos2_inventory` | List your inventory (slot, rarity and, once identified, armour or damage; `equipment=true` for gear only); `dos2_use` an item to drink, eat or read it |
 | `dos2_use` | Use an item: open containers and doors, pull levers, take stairs and ladders (walks there first) |
 | `dos2_loot` | List an opened container or a dead body you stand next to; `take="all"` or `take=[GUIDs]` to take; owned items are left alone |
+| `dos2_give` | Hand an item to another party member (then `dos2_party action=select` them and `dos2_equip` it) |
 | `dos2_equip` | Equip a weapon, shield or armour from your inventory (attribute requirements checked) |
 | `dos2_talk` | Walk up to a character and start a conversation |
 | `dos2_dialog` | Read the open conversation: new lines and numbered answers |

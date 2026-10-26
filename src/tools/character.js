@@ -73,3 +73,12 @@ tool("dos2_sneak", "Start (on=true) or stop sneaking with the acting character, 
   "are harder to spot but move slowly.",
   { on: z.boolean() },
   async (a) => text(`${(await call("sneak", a)).character} ${a.on ? "is sneaking" : "stopped sneaking"}.`));
+
+tool("dos2_give", "Hand an item from the acting character's inventory to another party member (their GUID from dos2_party), " +
+  "like dragging it between inventories. Equipped items must be taken off first. Switch to the receiver with " +
+  "dos2_party action=select, then dos2_equip it.",
+  { item: guid, to: guid, amount: z.number().int().min(1).optional().describe("How many of a stack (default all)") },
+  async (a) => {
+    const r = await call("give", a);
+    return text(`${r.gave}${r.amount > 1 ? ` x${r.amount}` : ""} given to ${r.to}.`);
+  });

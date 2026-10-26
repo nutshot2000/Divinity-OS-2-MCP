@@ -219,3 +219,19 @@ function Handlers.party_gather(args)
   end
   return { sent = sent }
 end
+
+--- Hand an item from the acting character to another party member (like dragging it between their inventories).
+function Handlers.give(args)
+  local me = ActiveChar()
+  local item = GetItem(args.item)
+  if item == nil then error("No item with GUID " .. tostring(args.item)) end
+  local owner = Osiq("GetInventoryOwner", item.MyGuid)
+  if owner == nil or BareGuid(owner) ~= BareGuid(me.MyGuid) then error((NameOf(item) or "That") .. " is not in your inventory") end
+  local to = member(args.to)
+  if to.MyGuid == me.MyGuid then error("Pick another party member") end
+  if Osiq("ItemIsEquipped", item.MyGuid) == 1 then error("Take it off first: " .. (NameOf(item) or "that") .. " is equipped") end
+  local amount = math.min(args.amount or item.Amount or 1, item.Amount or 1)
+  -- ItemToInventory(item, character, count, showNotification, equipOnPickup)
+  Osi.ItemToInventory(item.MyGuid, to.MyGuid, amount, 0, 0)
+  return { gave = NameOf(item), amount = amount, to = NameOf(to) }
+end
