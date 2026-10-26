@@ -80,8 +80,8 @@ tool("dos2_give", "Hand an item from the acting character's inventory to another
   "dos2_party action=select, then dos2_equip it.",
   { item: guid, to: guid, amount: z.number().int().min(1).optional().describe("How many of a stack (default all)") },
   async (a) => {
-    await showInventory();
+    const hint = await showInventory();
     const r = await call("give", a);
     await holdInventory();
-    return text(`${r.gave}${r.amount > 1 ? ` x${r.amount}` : ""} given to ${r.to}.`);
+    return text(`${r.gave}${r.amount > 1 ? ` x${r.amount}` : ""} given to ${r.to}.${hint}`);
   });

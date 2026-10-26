@@ -23,10 +23,10 @@ tool("dos2_equip", "Equip a weapon, shield or armour from your inventory by GUID
   "not meet its attribute requirements, as the game would.",
   { item: guid },
   async (a) => {
-    await showInventory();
+    const hint = await showInventory();
     const r = await call("equip", a);
     await holdInventory();
-    return text(`Equipped ${r.equipped}.`);
+    return text(`Equipped ${r.equipped}.${hint}`);
   });
 
 tool("dos2_inventory", "Your character's inventory as the inventory screen shows it: name, amount, what is equipped, " +
@@ -34,7 +34,7 @@ tool("dos2_inventory", "Your character's inventory as the inventory screen shows
   "drink, eat or read it, dos2_equip to wear it. equipment=true lists only weapons, armour and jewellery.",
   { equipment: z.boolean().optional().describe("Only gear (default: everything)") },
   async (a) => {
-    await showInventory();
+    const hint = await showInventory();
     const items = await call("inventory", { equipment: a.equipment });
     await holdInventory();
     const gear = (g) => !g ? "" : ` [${g.slot}${g.rarity && g.rarity !== "Common" ? `, ${g.rarity}` : ""}` +
@@ -42,5 +42,5 @@ tool("dos2_inventory", "Your character's inventory as the inventory screen shows
       (g.damage ? `, ${g.damage} ${String(g.damage_type).toLowerCase()} damage, ${g.ap} AP, range ${g.range}m` : "") + "]";
     return text(items.map((i) => `  ${i.name}${i.amount > 1 ? ` x${i.amount}` : ""} [${i.guid}]${i.equipped ? " (equipped)" : ""}` +
       gear(i.gear) + (i.gear && !i.identified ? " (unidentified: stats hidden)" : "") +
-      (i.description ? `\n      ${i.description.replace(/<[^>]*>/g, "")}` : "")).join("\n") || "  empty");
+      (i.description ? `\n      ${i.description.replace(/<[^>]*>/g, "")}` : "")).join("\n") || "  empty") + hint);
   });

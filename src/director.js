@@ -42,9 +42,20 @@ export async function wide() {
 // seconds after it (DOS2_INV_SECONDS, default 3; 0 turns it off). Only the inventory panel is ever forced open: showing
 // the character sheet this way crashed the game.
 export const INV_SECONDS = Number(process.env.DOS2_INV_SECONDS ?? 3);
+let inventoryHinted = false;
+/** Opens the inventory screen for the watcher. Returns "" or, once per run, a hint when the game has not created that
+ *  screen yet (it only does so the first time a player opens it: pressing I once is enough). */
 export async function showInventory() {
-  if (!(INV_SECONDS > 0)) return;
-  try { await call("show_inventory", {}, 5000, "client"); } catch { /* cosmetic */ }
+  if (!(INV_SECONDS > 0)) return "";
+  try { await call("show_inventory", {}, 5000, "client"); }
+  catch (e) {
+    if (/No inventory screen/.test(String(e.message)) && !inventoryHinted) {
+      inventoryHinted = true;
+      return "\n[The inventory is not shown on screen: press I once in the game, and from then on it opens by itself.]";
+    }
+    return "";
+  }
   await new Promise((r) => setTimeout(r, 1200)); // let it appear before anything changes
+  return "";
 }
 export const holdInventory = () => INV_SECONDS > 0 ? new Promise((r) => setTimeout(r, INV_SECONDS * 1000)) : Promise.resolve();
