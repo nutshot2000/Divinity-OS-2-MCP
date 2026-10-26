@@ -40,6 +40,15 @@ local function characterTags(me, c)
   return tags
 end
 
+--- Name of the non-party character who owns an item, or nil.
+function OwnerOfItem(item)
+  local owner = Osiq("ItemGetOwner", item.MyGuid)
+  if owner == nil or owner == "" or owner == "NULL_00000000-0000-0000-0000-000000000000" then return nil end
+  if Osiq("CharacterIsPartyMember", owner) == 1 then return nil end
+  local c = GetChar(owner)
+  return c and NameOf(c) or "someone"
+end
+
 local function itemTags(i)
   local tags = {}
   local g = i.MyGuid
@@ -47,6 +56,10 @@ local function itemTags(i)
   -- Only what hovering shows: "locked". Which key opens it is not something a player knows.
   if Osiq("ItemIsLocked", g) == 1 then tags[#tags + 1] = "locked" end
   if Osiq("ItemIsDestroyed", g) == 1 then tags[#tags + 1] = "destroyed" end
+  -- Belongs to someone else (not the party): taking from it is stealing, which the game marks on the item and which
+  -- can turn the owner and their friends hostile.
+  local o = OwnerOfItem(i)
+  if o then tags[#tags + 1] = "owned by " .. o end
   if (i.Amount or 1) > 1 then tags[#tags + 1] = "x" .. i.Amount end
   return tags
 end
@@ -207,7 +220,7 @@ function Handlers.use_status(args)
   -- pile up), which also marks the container closed, but its contents stay known to the player.
   if opened then OpenedByUs[BareGuid(args.item)] = Ext.Utils.MonotonicTime() end
   return {
-    carried = carried,
+    carried = carried, owner = (item and not carried) and OwnerOfItem(item) or nil,
     result = Uses[BareGuid(args.item)],
     opened = opened,
     dist = item and not carried and Dist(Pos(me), Pos(item)) or (carried and 0 or nil),

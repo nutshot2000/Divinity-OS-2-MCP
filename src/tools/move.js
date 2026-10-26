@@ -107,10 +107,15 @@ tool("dos2_use", "Use an item with the active character: open a container or doo
   "The character walks there first. A container's contents are listed once it is open; take=true also takes everything " +
   "in it (owned items stay), saving a dos2_loot call.",
   { item: guid, timeout: z.number().min(2).max(55).optional().describe("Seconds to wait (default 20)"),
-    take: z.boolean().optional().describe("Containers: take everything that is not owned by someone else") },
+    take: z.boolean().optional().describe("Containers: take everything that is not owned by someone else"),
+    steal: z.boolean().optional().describe("Open something that belongs to someone else anyway (theft). Default: refused") },
   async (a) => {
     // CharacterUseItem does not walk there (and still reports success), so get within reach first.
     const near = await call("use_status", { item: a.item });
+    // Someone else's property: opening it is stealing, which the game marks on the item and which can turn the owner and
+    // their friends hostile (Griff's sacks). Refuse unless the caller really means it.
+    if (near.owner && !near.carried && !a.steal) return text(`Not opening that: it belongs to ${near.owner}. Taking from it ` +
+      "is stealing and can make them and their friends hostile. Leave it, or pass steal=true only if you deliberately mean to steal.");
     // In a fight, only things the character carries (potions, scrolls) may be used here: walking over to open a chest or
     // door while enemies act is how a party dies. Fight first.
     if (near.in_combat && !near.carried) return text("Not doing that: you are in combat. Opening containers, doors and " +

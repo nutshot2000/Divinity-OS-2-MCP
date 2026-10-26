@@ -95,6 +95,9 @@ Use `dos2_say` to share what you are thinking before you act.
 their own (someone calls out, a skull speaks to an undead): if a move reports "dialogue started", call `dos2_dialog`.
 Role-play the character you were given; read their background from what the game shows.
 
+**Ownership.** `dos2_look` marks items that belong to someone ("owned by Camp Boss Griff"). `dos2_use` refuses to open them
+unless `steal=true`: stealing can turn the owner and their friends hostile, and an unplanned fight is how parties die.
+
 **Containers.** `dos2_use` opens a container (it reports "now open"), `dos2_loot` lists it, `dos2_loot take="all"`
 empties it. Owned items show "(owned by ...)" and are never taken: that would be stealing.
 
