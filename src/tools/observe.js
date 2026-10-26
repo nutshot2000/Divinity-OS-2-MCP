@@ -41,7 +41,8 @@ tool("dos2_explore", "Where to go next in a big area. Lists the nearest edges of
   "touches fog of war) by walking distance and direction, skipping edges you have already stood next to, and says how " +
   "much of the reachable area you have covered. Use it whenever you are unsure where to go, or notice you are walking " +
   "in circles: take the nearest edge with dos2_move, look, loot, repeat. When no edges are left the area is done.",
-  { radius: z.number().min(10).max(90).optional().describe("Metres to search (default 60)") },
+  { radius: z.number().min(10).max(90).optional().describe("Metres to search (default 60)"),
+    reset: z.boolean().optional().describe("Forget everywhere visited on this level (a new playthrough)") },
   async (a) => {
     const r = await call("explore", a);
     const line = (e) => `  ${e.dist}m ${e.dir}: dos2_move x=${e.x} z=${e.z}  (a ${e.size}m stretch of unexplored edge)`;

@@ -20,24 +20,65 @@ Known = Known or {}       -- level name -> { ["ix,iz"] = true }: cells within SI
 local function key(ix, iz) return ix .. "," .. iz end
 local function lattice(v) return math.floor(v / STEP + 0.5) end
 
+local FILE = "dos2bridge_visited.json"
+local dirty = false
+
+--- Mark one visited cell, and the cells within SIGHT of it as seen.
+local function stamp(level, cx, cz)
+  local v = Visited[level]
+  if v == nil then v = { n = 0 }; Visited[level] = v end
+  local known = Known[level]
+  if known == nil then known = {}; Known[level] = known end
+  local k = key(cx, cz)
+  if v[k] and known[k] then return false end
+  if not v[k] then v[k] = true; v.n = v.n + 1 end
+  local r = math.floor(SIGHT / STEP)
+  for dx = -r, r do
+    for dz = -r, r do
+      if dx * dx + dz * dz <= r * r then known[key(cx + dx, cz + dz)] = true end
+    end
+  end
+  return true
+end
+
 --- Remember the active character's current cell, and mark the cells around it as seen. Called about once a second
 --- and before anything that draws the map.
 function RecordVisit()
   local level = CurrentLevelName()
   if level == nil then return end
   local p = Pos(ActiveChar())
-  local v = Visited[level]
-  if v == nil then v = { n = 0 }; Visited[level] = v end
-  local known = Known[level]
-  if known == nil then known = {}; Known[level] = known end
-  local cx, cz = lattice(p.x), lattice(p.z)
-  local k = key(cx, cz)
-  if v[k] and known[k] then return end
-  if not v[k] then v[k] = true; v.n = v.n + 1 end
-  local r = math.floor(SIGHT / STEP)
-  for dx = -r, r do
-    for dz = -r, r do
-      if dx * dx + dz * dz <= r * r then known[key(cx + dx, cz + dz)] = true end
+  if stamp(level, lattice(p.x), lattice(p.z)) then dirty = true end
+end
+
+--- The record survives a game restart: it is written to Osiris Data every few seconds and read back at start.
+local function saveVisited()
+  local out = {}
+  for level, v in pairs(Visited) do
+    local cells = {}
+    for k in pairs(v) do if k ~= "n" then cells[#cells + 1] = k end end
+    out[level] = cells
+  end
+  pcall(Ext.IO.SaveFile, FILE, Ext.Json.Stringify(out, { Beautify = false }))
+  dirty = false
+end
+
+--- Forget everything (a new playthrough, or to start a level's exploration afresh).
+function ResetVisited(level)
+  if level then Visited[level] = nil; Known[level] = nil else Visited = {}; Known = {} end
+  saveVisited()
+end
+
+if next(Visited) == nil then
+  local ok, raw = pcall(Ext.IO.LoadFile, FILE)
+  if ok and raw and raw ~= "" then
+    local okParse, data = pcall(Ext.Json.Parse, raw)
+    if okParse and type(data) == "table" then
+      for level, cells in pairs(data) do
+        for _, k in ipairs(cells) do
+          local ix, iz = k:match("^(-?%d+),(-?%d+)$")
+          if ix then stamp(level, tonumber(ix), tonumber(iz)) end
+        end
+      end
     end
   end
 end
@@ -58,6 +99,7 @@ ExploreTick = Ext.Events.Tick:Subscribe(function ()
   if ticks % 30 ~= 0 then return end
   local ok, ready = pcall(function () return Ext.Osiris.IsCallable() and tostring(Ext.Server.GetGameState()) == "Running" end)
   if ok and ready then pcall(RecordVisit) end
+  if dirty and ticks % 300 == 0 then saveVisited() end   -- about every 10 s, only when something new was seen
 end)
 
 local COMPASS = { "E", "NE", "N", "NW", "W", "SW", "S", "SE" }
@@ -70,6 +112,7 @@ end
 function Handlers.explore(args)
   local grid = Ext.Entity.GetAiGrid()
   if grid == nil then error("No AI grid: is a level loaded?") end
+  if args.reset then ResetVisited(CurrentLevelName()) end
   RecordVisit()
   local me = ActiveChar()
   local p = Pos(me)

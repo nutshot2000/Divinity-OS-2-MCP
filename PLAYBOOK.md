@@ -55,7 +55,8 @@ edges of the unexplored (`?`) ground by walking distance and compass direction, 
    shows who is about).
 3. `dos2_explore` again. Repeat until it says no edges are left; "% stood on" shows how much you have covered.
 
-Edges you already stood beside are listed apart as "not a way on". If you notice you are in the same place twice,
+The record is kept in a file and survives game restarts; `dos2_explore reset=true` wipes it for this level (do that
+when starting a new playthrough). Edges you already stood beside are listed apart as "not a way on". If you notice you are in the same place twice,
 stop and call `dos2_explore` instead of picking a direction by feel. When it reports none, the way on is a door, stairs
 or ladder you have not used, a locked or fire-blocked route, or somewhere beyond the search radius.
 
