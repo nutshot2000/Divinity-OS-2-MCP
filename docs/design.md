@@ -232,3 +232,9 @@ abilities, 2 civil abilities, 3 talents, 4 traits). `selectTab(n)` only changes 
 (Script Extender crash dialog: `UIObjectFunctionCallCapture` from `UIObject::LuaExternalInterfaceCall`, Lua frame
 `Client/UI.lua` in the tidy loop). It now calls only `closeUI` (known to work on books) and falls back to the engine's
 `ui:Hide()`; the loot window, inventory and character sheet are only ever hidden with `Hide()`.
+
+## Crash: ItemToInventory while looting a fresh corpse (2026-10-26)
+
+Taking the items of an enemy (Narin) seconds after he died crashed the game inside `Osi.ItemToInventory`
+(`Handlers.loot_take`). Other bodies had always been fine. Unknown which item; `loot_take` now iterates a copy of the
+container's item list, asks for no pickup notification, uses an amount of at least 1, and `dos2_loot` waits 1.5 s first.

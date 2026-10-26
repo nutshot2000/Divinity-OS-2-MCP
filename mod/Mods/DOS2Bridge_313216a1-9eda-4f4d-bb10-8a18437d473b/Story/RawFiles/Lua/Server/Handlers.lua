@@ -294,14 +294,20 @@ function Handlers.loot_take(args)
     for _, g in ipairs(args.items) do wanted[BareGuid(g)] = true end
   end
   local taken, skipped = {}, {}
-  for _, g in ipairs(box:GetInventoryItems() or {}) do
+  -- Moving items changes the container's inventory, so work from a copy of its list. ItemToInventory crashed the game
+  -- once while taking a freshly killed enemy's items (2026-10-26): no pickup popup (showNotification 0), at least one
+  -- of each item, and the caller waits for the body to settle before asking.
+  local ids = {}
+  for _, g in ipairs(box:GetInventoryItems() or {}) do ids[#ids + 1] = g end
+  for _, g in ipairs(ids) do
     local it = GetItem(g)
     if it and lootable(it) and (wanted == nil or wanted[BareGuid(it.MyGuid)]) then
       local entry = lootEntry(it)
       if entry.owned_by then
         skipped[#skipped + 1] = entry
       else
-        Osi.ItemToInventory(it.MyGuid, me.MyGuid, entry.amount, 1, 0)
+        entry.amount = math.max(1, entry.amount or 1)
+        Osi.ItemToInventory(it.MyGuid, me.MyGuid, entry.amount, 0, 0)
         taken[#taken + 1] = entry
       end
     end
