@@ -25,6 +25,19 @@ watching. This file is sent to you as the server's instructions; `dos2_help` ret
 2. `dos2_status` – who you are, HP, where you are, in combat or dialogue.
 3. If `in_dialog` is true: `dos2_dialog`. If `in_combat` is true: `dos2_combat`.
 
+## Combat comes first
+
+A fight can start at any moment, including while you are doing something else (walking, opening a chest, talking). The
+bridge now marks it: every tool result ends with `[!! IN COMBAT !! ...]` while any fight is on, `dos2_explore`,
+`dos2_loot take` and opening containers or doors refuse until it is over, and `dos2_move` reports "combat started". When
+you see that:
+
+1. Stop whatever you were doing. Do not loot, explore or talk.
+2. `dos2_combat`, then play every turn: `dos2_tactics`, `dos2_attack` / `dos2_cast`, `dos2_end_turn`. Use the whole party:
+   `dos2_party action=select` for each member whose turn it is.
+3. Check Source costs in `dos2_skills` ("1 Source"): a skill that needs Source does nothing at 0 Source Points.
+4. If it looks unwinnable (many enemies, split party, low HP), say so to the player instead of carrying on blindly.
+
 ## Exploring (the main loop)
 
 1. `dos2_look` – people and items in sight, nearest first, with GUIDs and tags (enemy, container, locked, dead).

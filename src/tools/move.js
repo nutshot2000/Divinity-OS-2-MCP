@@ -1,5 +1,5 @@
 // Tools: movement and interaction.
-import { tool, call, text, json, z, guid } from "../core.js";
+import { tool, call, text, json, z, guid, inCombat } from "../core.js";
 import { focus, wide, CLOSE, caption } from "../director.js";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -104,11 +104,17 @@ tool("dos2_move", "Walk the active character (the party follows) to a point or a
   });
 
 tool("dos2_use", "Use an item with the active character: open a container or door, pull a lever, pick something up. " +
-  "The character walks there first.",
-  { item: guid, timeout: z.number().min(2).max(55).optional().describe("Seconds to wait (default 20)") },
+  "The character walks there first. A container's contents are listed once it is open; take=true also takes everything " +
+  "in it (owned items stay), saving a dos2_loot call.",
+  { item: guid, timeout: z.number().min(2).max(55).optional().describe("Seconds to wait (default 20)"),
+    take: z.boolean().optional().describe("Containers: take everything that is not owned by someone else") },
   async (a) => {
     // CharacterUseItem does not walk there (and still reports success), so get within reach first.
     const near = await call("use_status", { item: a.item });
+    // In a fight, only things the character carries (potions, scrolls) may be used here: walking over to open a chest or
+    // door while enemies act is how a party dies. Fight first.
+    if (near.in_combat && !near.carried) return text("Not doing that: you are in combat. Opening containers, doors and " +
+      "other world objects waits until the fight is over. Call dos2_combat and play the fight.");
     if (!near.carried && (near.dist == null || near.dist > 2)) {
       const m = await walkTo({ target: a.item });
       if (m.refused || m.hurt || !/arrived|stopped/.test(m.outcome)) return text(`Did not reach the item: ${m.outcome}`);
@@ -159,9 +165,19 @@ tool("dos2_use", "Use an item with the active character: open a container or doo
     let contents = "";
     if (s.opened) {
       const r = await call("loot_list", { container: started.guid }).catch(() => null);
-      if (r) contents = `\ninside:\n${r.items.map((i) => `  ${i.name}${i.amount > 1 ? ` x${i.amount}` : ""} [${i.guid}]` +
-        (i.owned_by ? ` (owned by ${i.owned_by})` : "")).join("\n") || "  nothing"}` +
-        (r.items.length ? `\nTake with dos2_loot container=${started.guid} take="all".` : "");
+      if (r) {
+        const line = (i) => `  ${i.name}${i.amount > 1 ? ` x${i.amount}` : ""} [${i.guid}]` + (i.owned_by ? ` (owned by ${i.owned_by})` : "");
+        if (a.take && r.items.length) {
+          // take=true: empty it in the same call (owned items stay: that would be stealing).
+          const t = await call("loot_take", { container: started.guid });
+          if (t.taken.length) await caption(`Took ${t.taken.slice(0, 3).map((i) => i.name + (i.amount > 1 ? ` x${i.amount}` : "")).join(", ")}${t.taken.length > 3 ? " and more" : ""}`);
+          contents = `\ntook:\n${t.taken.map(line).join("\n") || "  nothing"}` +
+            (t.skipped_owned.length ? `\nleft (owned):\n${t.skipped_owned.map(line).join("\n")}` : "");
+        } else {
+          contents = `\ninside:\n${r.items.map(line).join("\n") || "  nothing"}` +
+            (r.items.length ? `\nTake with dos2_loot container=${started.guid} take="all", or use dos2_use again with take=true.` : "");
+        }
+      }
     }
     return text(`${started.using}: ${outcome}` + (s.opened ? ", now open" : "") +
       (s.dist != null ? ` (${s.dist}m away)` : "") + contents);

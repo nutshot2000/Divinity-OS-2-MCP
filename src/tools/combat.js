@@ -85,7 +85,7 @@ tool("dos2_skills", "Your character's skills as the hotbar shows them: id, name,
   { all: z.boolean().optional().describe("Include learned but not memorised skills") },
   async (a) => {
     const skills = (await call("skills")).filter((s) => a.all || s.memorised);
-    return text(skills.map((s) => `${s.id} "${s.name}": ${s.ap} AP, cooldown ${s.cooldown_turns}` +
+    return text(skills.map((s) => `${s.id} "${s.name}": ${s.ap} AP${s.source ? `, ${s.source} Source` : ""}, cooldown ${s.cooldown_turns}` +
       (s.cooldown_left ? ` (${s.cooldown_left} turns left)` : "") + (s.range ? `, range ${s.range}m` : "") +
       (s.area ? `, area ${s.area}m` : "") + (s.damage_type ? `, ${s.damage_type}` : "") +
       ` [${Object.entries(s.targets).filter(([, v]) => v).map(([k]) => k).join("/") || "self"}]` +

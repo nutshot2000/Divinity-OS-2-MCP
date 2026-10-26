@@ -1,5 +1,5 @@
 // Tools: containers and loot.
-import { tool, call, text, z, guid } from "../core.js";
+import { tool, call, text, z, guid, inCombat } from "../core.js";
 import { showInventory, holdInventory, caption } from "../director.js";
 
 const line = (i) => `  ${i.name}${i.amount > 1 ? ` x${i.amount}` : ""} [${i.guid}]` + (i.owned_by ? ` (owned by ${i.owned_by})` : "");
@@ -14,6 +14,7 @@ tool("dos2_loot", "List what is in a container the active character has opened a
       const r = await call("loot_list", { container: a.container });
       return text(`${r.container}:\n${r.items.map(line).join("\n") || "  empty"}`);
     }
+    if (await inCombat()) return text("Not looting: you are in combat. Take loot after the fight (call dos2_combat).");
     const r = await call("loot_take", { container: a.container, items: a.take === "all" ? undefined : a.take });
     if (r.taken.length) await caption(`Took ${r.taken.slice(0, 3).map((i) => i.name + (i.amount > 1 ? ` x${i.amount}` : "")).join(", ")}${r.taken.length > 3 ? " and more" : ""}`);
     return text(`${r.container}: took\n${r.taken.map(line).join("\n") || "  nothing"}` +

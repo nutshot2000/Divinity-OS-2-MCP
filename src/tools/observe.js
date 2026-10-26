@@ -1,5 +1,5 @@
 // Tools: observe.
-import { tool, modTool, call, text, json, z } from "../core.js";
+import { tool, modTool, call, text, json, z, inCombat } from "../core.js";
 
 tool("dos2_status", "Party overview: level (map), active character, each party member's position, HP, armour, AP, " +
   "level, and whether they are in combat, in dialogue or dead.",
@@ -44,6 +44,8 @@ tool("dos2_explore", "Where to go next in a big area. Lists the nearest edges of
   { radius: z.number().min(10).max(90).optional().describe("Metres to search (default 60)"),
     reset: z.boolean().optional().describe("Forget everywhere visited on this level (a new playthrough)") },
   async (a) => {
+    if (await inCombat()) return text("Not exploring: you are in combat. Call dos2_combat and play the fight (dos2_tactics, " +
+      "dos2_attack, dos2_cast, dos2_end_turn). Explore again when the fight is over.");
     const r = await call("explore", a);
     const line = (e) => `  ${e.dist}m ${e.dir}: dos2_move x=${e.x} z=${e.z}  (a ${e.size}m stretch of unexplored edge)`;
     const out = [`At ${r.x},${r.z}. Reachable explored ground: about ${r.reachable_m2} m2, ${r.covered_pct}% of it stood on ` +

@@ -127,7 +127,7 @@ function Handlers.skills()
         out[#out + 1] = {
           id = id, name = translated(st.DisplayName, id), memorised = skill.IsActivated,
           granted = not skill.IsLearned or nil,
-          ap = st.ActionPoints, cooldown_turns = st.Cooldown,
+          ap = st.ActionPoints, source = (st["Magic Cost"] or 0) > 0 and st["Magic Cost"] or nil, cooldown_turns = st.Cooldown,
           cooldown_left = math.ceil((skill.ActiveCooldown or 0) / 6),
           range = st.TargetRadius ~= 0 and st.TargetRadius or st.Range, area = st.AreaRadius ~= 0 and st.AreaRadius or st.ExplodeRadius,
           type = st.SkillType, damage_type = st.DamageType ~= "None" and st.DamageType or nil,
@@ -172,6 +172,12 @@ function Handlers.cast(args)
   end
   if not skill.IsActivated then error(args.skill .. " is not memorised") end
   if (skill.ActiveCooldown or 0) > 0 then error(args.skill .. " is on cooldown") end
+  -- Source skills cost Source Points; the game ignores the cast silently when there are none (Break the Shackles did).
+  local okCost, cost = pcall(function () return Ext.Stats.Get(args.skill)["Magic Cost"] end)
+  if okCost and type(cost) == "number" and cost > 0 then
+    local have = Osiq("CharacterGetSourcePoints", me.MyGuid) or 0
+    if have < cost then error(args.skill .. " needs " .. cost .. " Source Point" .. (cost > 1 and "s" or "") .. " and you have " .. have) end
+  end
   if args.target then
     local target = GetChar(args.target) or GetItem(args.target)
     if target == nil then error("No target with GUID " .. tostring(args.target)) end
