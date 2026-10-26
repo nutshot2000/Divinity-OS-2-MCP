@@ -25,6 +25,24 @@ watching. This file is sent to you as the server's instructions; `dos2_help` ret
 2. `dos2_status` – who you are, HP, where you are, in combat or dialogue.
 3. If `in_dialog` is true: `dos2_dialog`. If `in_combat` is true: `dos2_combat`.
 
+## Fighting well (and fast)
+
+Standing still and trading blows loses fights. Each turn:
+
+1. `dos2_combat` (it ends with the top of the plan) or `dos2_advice` for the whole plan: hazards under you first, then
+   low HP, then ground, then who to focus.
+2. **Ground**: take high ground or a spot with a wall or ally at your back before attacking; never stand in fire, poison or
+   oil; never let two or more enemies stand next to you. Spend the AP to move first, then attack with what is left.
+3. **Focus one enemy** until it dies. Strip the armour that is lower first (physical skills for physical armour, fire and
+   other spells for magic armour); once the matching armour is gone, knockdowns and stuns land.
+4. **Use the whole party**: select each member (`dos2_party action=select`) and give each a turn plan. Squishy members hang
+   back, tough ones hold a chokepoint.
+5. Heal early (potions, Blood Sucker), and `dos2_flee` when outnumbered and losing, with HP to spare.
+
+For speed, send the whole turn at once with `dos2_turn`:
+`[{do:"move",x:..,z:..},{do:"cast",skill:"..",target:".."},{do:"attack",target:".."},{do:"end_turn"}]`. It stops at the first
+problem and tells you what happened; one call per turn instead of six.
+
 ## XP and level-ups
 
 After every tool the bridge appends `[+N XP for <name> (now X).]` when experience was gained, and

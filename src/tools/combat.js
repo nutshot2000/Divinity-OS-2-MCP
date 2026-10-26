@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { tool, call, text, z, guid } from "../core.js";
 import { focus, focusBetween, wide, MEDIUM, caption } from "../director.js";
+import { walkTo } from "./move.js";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // Combat log entries already shown; in a temp file too, like the dialogue mark, for one-shot CLI calls.
@@ -45,13 +46,13 @@ const state = async () => {
 /** After an action: wait until AP drops, the turn passes or the fight ends (max ~12 s). */
 async function afterAction(apBefore) {
   const log = [];
-  for (let i = 0; i < 30; i++) {
-    await sleep(400);
+  for (let i = 0; i < 40; i++) {
+    await sleep(250);
     const s = await state();
     log.push(...s.log);
     if (!s.in_combat || !s.my_turn || s.me.ap < apBefore) break;
   }
-  await sleep(800); // let the animation and damage land
+  await sleep(450); // let the animation and damage land
   const final = await state();
   // The game refuses actions silently (requirement not met, out of range, blocked): nothing changes at all.
   final.refused = final.in_combat && final.my_turn && final.me.ap >= apBefore;
@@ -76,9 +77,29 @@ async function waitForTurn() {
   return s;
 }
 
+/** The top of the battle plan for the acting character (hazards, low HP, ground, focus target), as text; "" if unavailable. */
+async function planHead(n = 3) {
+  try { return (await call("advise", {})).lines.slice(0, n).map((l) => `  - ${l}`).join(String.fromCharCode(10)); } catch { return ""; }
+}
+
 tool("dos2_combat", "Combat status: whose turn it is, your HP/armour/AP, and the turn order with every combatant you " +
-  "can see (HP, armour, AP, distance, statuses), plus what happened since the last call.",
-  {}, async () => text(show(await state())));
+  "can see (HP, armour, AP, distance, statuses), plus what happened since the last call. On your turn it ends with the top of " +
+  "the battle plan (hazards under you, low HP, high ground, who to focus); dos2_advice gives the whole plan.",
+  {}, async () => {
+    const s = await state();
+    let out = show(s);
+    if (s.in_combat && s.my_turn) { const p = await planHead(3); if (p) out += `${String.fromCharCode(10)}${String.fromCharCode(10)}PLAN (dos2_advice for all of it):${String.fromCharCode(10)}${p}`; }
+    return text(out);
+  });
+
+tool("dos2_advice", "A battle plan for the acting character's turn, in priority order: leave fire or poison first, deal with " +
+  "burning or low HP, take high ground or a chokepoint instead of standing in the open, focus ONE enemy (weakest effective " +
+  "health, strip the lower armour first), what is ready to cast, and when to flee. Built only from what you can see. Call it " +
+  "at the start of every turn; it takes no turn time.",
+  {}, async () => {
+    const r = await call("advise", {});
+    return text(r.lines.map((l, i) => `${i + 1}. ${l}`).join(String.fromCharCode(10)) || "No special advice: attack the weakest enemy in reach.");
+  });
 
 tool("dos2_skills", "Your character's skills as the hotbar shows them: id, name, AP cost, cooldown (and turns left), " +
   "range, area, damage type, what it can target, and its tooltip text. Only memorised skills can be used.",
@@ -98,9 +119,9 @@ tool("dos2_attack", "Basic weapon attack on a target (walks into range if needed
   "returns the combat status.",
   { target: guid },
   async (a) => {
-    await focusBetween(a.target, MEDIUM);
+    focusBetween(a.target, MEDIUM);
     const r = await call("attack", a);
-    await caption(`Attacking ${r.attacking}`);
+    caption(`Attacking ${r.attacking}`);
     return text(`Attacking ${r.attacking}\n` + show(await afterAction(r.ap_before)));
   });
 
@@ -109,16 +130,16 @@ tool("dos2_cast", "Use a memorised skill (id from dos2_skills) on a target GUID,
   { skill: z.string(), target: guid.optional(), x: z.number().optional(), z: z.number().optional() },
   async (a) => {
     if (a.target == null && (a.x == null || a.z == null)) throw new Error("Give a target GUID, or x and z");
-    if (a.target) await focusBetween(a.target, MEDIUM);
+    if (a.target) focusBetween(a.target, MEDIUM);
     const r = await call("cast", a);
-    await caption(`Casting ${r.casting}`);
+    caption(`Casting ${r.casting}`);
     return text(`Casting ${r.casting}\n` + show(await afterAction(r.ap_before)));
   });
 
 tool("dos2_end_turn", "End your turn, then wait while the other combatants act (up to ~50 s) and return the combat " +
   "status when it is your turn again or the fight is over. Call again if it is still someone else's turn.",
   {}, async () => {
-    await caption("Ending turn");
+    caption("Ending turn");
     // At 0 AP the game ends the turn itself; then there is nothing to end, only waiting to do.
     try { await call("end_turn"); } catch (e) { if (!/Not .*turn/.test(String(e.message))) throw e; }
     // The turn does not pass at once: wait for it to leave us first, or waitForTurn would return immediately.
@@ -165,9 +186,9 @@ tool("dos2_use_on", "Throw or read an item from your inventory at a target GUID 
   { item: guid, target: guid.optional(), x: z.number().optional(), z: z.number().optional() },
   async (a) => {
     const before = await state();
-    if (a.target) await focusBetween(a.target, MEDIUM);
+    if (a.target) focusBetween(a.target, MEDIUM);
     const r = await call("use_item", a);
-    await caption(`Using ${r.using}`);
+    caption(`Using ${r.using}`);
     const s = await afterAction(r.ap_before);
     const cast = s.log.some((e) => e.event === "cast" && e.skill === r.skill) ||
       (await call("combat", { since: before.log_last })).log.some((e) => e.event === "cast" && e.skill === r.skill);
@@ -183,7 +204,69 @@ tool("dos2_flee", "Flee the fight: every living party member leaves combat. The 
   {},
   async () => {
     const r = await call("flee", {});
-    await caption("Fleeing!");
+    caption("Fleeing!");
     return text(`Fled: ${r.party} of you left combat against ${r.enemies} enemies. Move away from them now (dos2_move), then ` +
       "heal and regroup; use dos2_use_on with a Resurrection Scroll on a fallen friend once it is safe.");
+  });
+
+tool("dos2_turn", "Play several actions of your turn in ONE call, in order, and get the combined result and the new state. " +
+  "This is much faster than separate calls: plan the turn from dos2_combat / dos2_advice, then send it all, e.g. " +
+  "[{do:\"move\",x:..,z:..},{do:\"cast\",skill:\"...\",target:\"...\"},{do:\"attack\",target:\"...\"},{do:\"end_turn\"}]. " +
+  "Actions: move (x,z or target), cast (skill + target, or x,z), attack (target), use_item (carried potion or scroll GUID), " +
+  "end_turn. It stops at the first problem (a refused action, damage while moving, combat over, not your turn) and says why. " +
+  "Include end_turn last to also wait through the enemies' turns.",
+  { actions: z.array(z.object({
+      do: z.enum(["move", "cast", "attack", "use_item", "end_turn"]),
+      target: z.string().optional(), x: z.number().optional(), z: z.number().optional(),
+      skill: z.string().optional(), item: z.string().optional(),
+    })).min(1).max(8) },
+  async (a) => {
+    const out = [];
+    let last = null, ended = false;
+    for (const act of a.actions) {
+      try {
+        if (act.do === "attack") {
+          if (!act.target) throw new Error("attack needs a target");
+          focusBetween(act.target, MEDIUM);
+          const r = await call("attack", { target: act.target });
+          caption(`Attacking ${r.attacking}`);
+          last = await afterAction(r.ap_before);
+          out.push(`attack ${r.attacking}${last.refused ? " - REFUSED (out of range or blocked?)" : ""}`);
+        } else if (act.do === "cast") {
+          if (!act.skill) throw new Error("cast needs a skill");
+          if (act.target) focusBetween(act.target, MEDIUM);
+          const r = await call("cast", { skill: act.skill, target: act.target, x: act.x, z: act.z });
+          caption(`Casting ${r.casting}`);
+          last = await afterAction(r.ap_before);
+          out.push(`cast ${r.casting}${last.refused ? " - REFUSED (range, line of sight or requirement?)" : ""}`);
+        } else if (act.do === "move") {
+          const m = await walkTo({ x: act.x, z: act.z, target: act.target, run: true, timeoutMs: 20000 });
+          out.push(m.refused ? `move REFUSED: ${m.outcome}` : `move: ${m.outcome}, now at ${m.x},${m.z}`);
+          if (m.refused || m.hurt || !/arrived/.test(m.outcome ?? "")) { last = await state(); break; }
+          last = await state();
+        } else if (act.do === "use_item") {
+          if (!act.item) throw new Error("use_item needs an item GUID");
+          await call("use", { item: act.item });
+          await sleep(900);
+          last = await state();
+          out.push("use_item done");
+        } else if (act.do === "end_turn") {
+          out.push("end turn");
+          try { await call("end_turn"); } catch (e) { if (!/Not .*turn/.test(String(e.message))) throw e; }
+          for (let i = 0; i < 20; i++) { await sleep(200); const st = await state(); if (!st.in_combat || !st.my_turn) break; }
+          last = await waitForTurn();
+          ended = true;
+          break;
+        }
+        if (last && (!last.in_combat || !last.my_turn)) break;
+        if (last && last.refused) break;
+      } catch (e) {
+        out.push(`STOPPED at ${act.do}: ${String(e.message).split("\n")[0]}`);
+        break;
+      }
+    }
+    if (!last) last = await state();
+    let tail = show(last);
+    if (last.in_combat && last.my_turn) { const p = await planHead(3); if (p) tail += `\n\nPLAN:\n${p}`; }
+    return text(`${out.map((l, i) => `${i + 1}. ${l}`).join("\n")}\n\n${tail}`);
   });

@@ -26,7 +26,7 @@ export async function inCombat() {
 }
 
 // Tools that already show the fight themselves: no banner needed after them.
-const SHOWS_COMBAT = new Set(["dos2_flee", "dos2_combat", "dos2_attack", "dos2_cast", "dos2_end_turn", "dos2_wait_turn", "dos2_use_on"]);
+const SHOWS_COMBAT = new Set(["dos2_turn", "dos2_advice", "dos2_flee", "dos2_combat", "dos2_attack", "dos2_cast", "dos2_end_turn", "dos2_wait_turn", "dos2_use_on"]);
 const COMBAT_BANNER = "\n\n[!! IN COMBAT !! Stop exploring, looting and talking. Call dos2_combat now, and play EVERY turn: " +
   "dos2_tactics for position, dos2_attack / dos2_cast, then dos2_end_turn. Every action outside the fight gives the " +
   "enemies free turns, and wandering off or opening containers mid-fight is how characters die. If it looks " +
@@ -39,7 +39,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 const XP_MARK = join(tmpdir(), "dos2-bridge-xp-mark.json");
 let lastXp = (() => { try { return JSON.parse(readFileSync(XP_MARK, "utf8")); } catch { return {}; } })();
+let lastProgressCheck = 0;
 async function progressNote() {
+  if (Date.now() - lastProgressCheck < 8000) return ""; // not on every call: it costs a round trip
+  lastProgressCheck = Date.now();
   let party;
   try { party = await call("progress", {}, 5000); } catch { return ""; }
   let note = "";
