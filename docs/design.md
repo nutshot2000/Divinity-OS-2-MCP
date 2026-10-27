@@ -268,3 +268,13 @@ must be fetched again each tick (held ones expire). A party member landing took 
 - `safe_path` searched a box 12 m around start and goal only, so a 188 m detour round a cliff read as "every route
   crosses a hazard". It now widens the box (12, 45, then 90 m) before giving up.
 - `dos2_explore` lists seen ground no walk reaches but a 13 m Teleportation hop does, with where to stand and land.
+
+## Identifying, carried to-dos (2026-10-27)
+
+- The Identifying Glass's template use action is `Identify` (`IdentifyActionData`, `Consume = false`). `dos2_identify`
+  sets `item.Stats.IsIdentified = 1` on carried items when the acting character has the glass; the inventory then shows
+  the real stats.
+- Carried books, notes, skill books, bags and unidentified items were never listed anywhere, so they sat unread.
+  `carried_todo` reads each carried item's use actions (`Book`, `Recipe`, `SkillBook`) and containers; `dos2_explore`
+  and `dos2_sweep` list the ones not dealt with yet. Bags the party carries report the world origin as their position,
+  so `openContainer` treats them as always in reach.

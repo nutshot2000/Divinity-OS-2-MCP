@@ -37,6 +37,18 @@ tool("dos2_equip", "Equip a weapon, shield or armour from your inventory by GUID
     return text(`Equipped ${r.equipped}.${hint}`);
   });
 
+tool("dos2_identify", "Identify carried items with an Identifying Glass (it must be in the acting character's inventory; it is " +
+  "not used up), as using the glass on them does in game. Pass items=[GUIDs], or nothing for every unidentified item the " +
+  "party carries. Then dos2_inventory shows their real stats.",
+  { items: z.array(guid).optional() },
+  async (a) => {
+    const hint = await showInventory();
+    const r = await call("identify", a);
+    if (r.identified.length) await caption(`Identified ${r.identified.slice(0, 3).map((i) => i.name).join(", ")}${r.identified.length > 3 ? " and more" : ""}`);
+    await holdInventory();
+    return text(`${r.glass}: identified\n${r.identified.map((i) => `  ${i.name} [${i.guid}] (${i.holder})`).join("\n") || "  nothing (all already identified)"}` + hint);
+  });
+
 tool("dos2_inventory", "Your character's inventory as the inventory screen shows it: name, amount, what is equipped, " +
   "and for gear its slot, rarity and (once identified) armour or damage, plus descriptions. Use dos2_use on an item's GUID to " +
   "drink, eat or read it, dos2_equip to wear it. equipment=true lists only weapons, armour and jewellery.",

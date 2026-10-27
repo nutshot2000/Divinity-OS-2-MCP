@@ -267,6 +267,9 @@ local function openContainer(me, guid)
   local box = GetItem(guid)
   if box == nil then error("No container with GUID " .. tostring(guid)) end
   if Osiq("ItemIsContainer", box.MyGuid) ~= 1 then error(NameOf(box) .. " is not a container") end
+  -- A bag the party carries (Source Hunter Backpack) reports the world origin as its position: it is always in reach.
+  local holder = Osiq("GetInventoryOwner", box.MyGuid)
+  if holder ~= nil and holder ~= "" and Osiq("CharacterIsPartyMember", holder) == 1 then return box end
   local d = Dist(Pos(me), Pos(box))
   if d > LOOT_REACH then error(NameOf(box) .. " is " .. d .. "m away: walk to it and open it first (dos2_use)") end
   local openedAt = OpenedByUs[BareGuid(box.MyGuid)]
@@ -403,6 +406,65 @@ function Handlers.inventory(args)
     end
   end
   table.sort(out, function (a, b) return a.name < b.name end)
+  return out
+end
+
+--- Identify carried items with an Identifying Glass, as using the glass on them does in game. The glass's use action is
+--- "Identify" and is not consumed (template data). Needs the glass in the acting character's own inventory; only items
+--- the party carries can be identified (`items` GUIDs, or all unidentified ones).
+function Handlers.identify(args)
+  local me = ActiveChar()
+  local glass
+  for _, g in ipairs(me:GetInventoryItems() or {}) do
+    local it = GetItem(g)
+    local ok, acts = pcall(function () return (it.CurrentTemplate or it.RootTemplate).OnUsePeaceActions end)
+    if ok and acts then
+      for _, a in pairs(acts) do if tostring(a.Type) == "Identify" then glass = it end end
+    end
+    if glass then break end
+  end
+  if glass == nil then error((NameOf(me) or "You") .. " carries no Identifying Glass") end
+  local want = {}
+  for _, g in ipairs(args.items or {}) do want[BareGuid(g)] = true end
+  local done = {}
+  for _, pg in ipairs(PartyGuids()) do
+    local member = GetChar(pg)
+    for _, g in ipairs(member and member:GetInventoryItems() or {}) do
+      local it = GetItem(g)
+      local ok, idd = pcall(function () return it.Stats.IsIdentified end)
+      if ok and idd == 0 and (args.items == nil or want[BareGuid(it.MyGuid)]) then
+        it.Stats.IsIdentified = 1
+        done[#done + 1] = { name = NameOf(it), guid = it.MyGuid, holder = NameOf(member) }
+      end
+    end
+  end
+  return { glass = NameOf(glass), identified = done }
+end
+
+--- What the party carries that still wants attention: things to read (books, notes, letters), skill books to learn,
+--- bags to open, and unidentified items. Found from each item's template use actions (Book, SkillBook, Recipe, ...).
+function Handlers.carried_todo()
+  local out = { read = {}, learn = {}, bags = {}, unidentified = 0 }
+  for _, pg in ipairs(PartyGuids()) do
+    local member = GetChar(pg)
+    for _, g in ipairs(member and member:GetInventoryItems() or {}) do
+      local it = GetItem(g)
+      if it then
+        local entry = { name = NameOf(it), guid = it.MyGuid, holder = NameOf(member), holder_guid = member.MyGuid }
+        local ok, acts = pcall(function () return (it.CurrentTemplate or it.RootTemplate).OnUsePeaceActions end)
+        if ok and acts then
+          for _, a in pairs(acts) do
+            local t = tostring(a.Type)
+            if t == "SkillBook" then out.learn[#out.learn + 1] = entry; break
+            elseif t == "Book" or t == "Recipe" then out.read[#out.read + 1] = entry; break end
+          end
+        end
+        if Osiq("ItemIsContainer", it.MyGuid) == 1 then out.bags[#out.bags + 1] = entry end
+        local okI, idd = pcall(function () return it.Stats.IsIdentified end)
+        if okI and idd == 0 then out.unidentified = out.unidentified + 1 end
+      end
+    end
+  end
   return out
 end
 

@@ -59,6 +59,7 @@ character's head), keep the pace up, and prefer the text tools over screenshots.
 | `dos2_use` | Use an item: open containers and doors, pull levers, take stairs and ladders (walks there first) |
 | `dos2_sweep` | Open every container within reach and loot every dead body (animals too), taking what is not owned (skips owned and locked ones); lists notes to read and people to talk to |
 | `dos2_loot` | List an opened container or a dead body you stand next to; `take="all"` or `take=[GUIDs]` to take; owned items are left alone |
+| `dos2_identify` | Identify carried items with an Identifying Glass (the acting character must carry it; it is not used up) |
 | `dos2_give` | Hand an item to another party member (then `dos2_party action=select` them and `dos2_equip` it) |
 | `dos2_equip` | Equip a weapon, shield or armour from your inventory (attribute requirements checked) |
 | `dos2_talk` | Walk up to a character and start a conversation |

@@ -17,7 +17,20 @@ export async function whatsLeft(radius = 25) {
   const reads = (r.items ?? []).filter((o) => !o.tags.includes("container") && READABLE.test(o.name) && !owned(o) && !isUsed(o.guid));
   const people = (r.characters ?? []).filter((c) => !c.tags.some((t) => /enemy|dead|party/.test(t)) && !isTalked(c.guid));
   const bodies = (r.characters ?? []).filter((c) => c.tags.includes("dead") && !c.tags.includes("party") && !isUsed(c.guid));
-  return { containers: containers.filter((o) => !locked.includes(o)), locked, reads, people, bodies };
+  return { containers: containers.filter((o) => !locked.includes(o)), locked, reads, people, bodies, carried: await carriedTodo() };
+}
+
+/** Lines for what the party carries but has not dealt with: unread books and notes, skill books, bags, unidentified gear. */
+export async function carriedTodo() {
+  let c;
+  try { c = await call("carried_todo"); } catch { return []; }
+  const who = (i) => `${i.name} [${i.guid}] (${i.holder}: dos2_party action=select character=${i.holder_guid} first)`;
+  return [
+    ...c.learn.filter((i) => !isUsed(i.guid)).map((i) => `  learn: skill book ${who(i)}: dos2_use item=${i.guid}, then dos2_memorise`),
+    ...c.read.filter((i) => !isUsed(i.guid)).map((i) => `  read (carried): ${who(i)}: dos2_use item=${i.guid}`),
+    ...c.bags.filter((i) => !isUsed(i.guid)).map((i) => `  open bag: ${who(i)}: dos2_loot container=${i.guid}`),
+    ...(c.unidentified ? [`  identify: ${c.unidentified} carried item(s) unidentified: dos2_identify (needs an Identifying Glass)`] : []),
+  ];
 }
 
 tool("dos2_sweep", "Open every container within reach and loot every dead body, taking what is not owned: a quick loot of the room. Skips owned " +
@@ -52,6 +65,7 @@ tool("dos2_sweep", "Open every container within reach and loot every dead body, 
     const rest = [];
     if (left.locked.length) rest.push(`locked (need a key or lockpicks): ${left.locked.map((o) => `${o.name} [${o.guid}]`).join(", ")}`);
     if (left.reads.length) rest.push(`to read (dos2_use): ${left.reads.map((o) => `${o.name} [${o.guid}]`).join(", ")}`);
+    if (left.carried.length) rest.push(`carried, not dealt with yet:\n${left.carried.join("\n")}`);
     if (left.people.length) rest.push(`people to talk to (dos2_talk): ${left.people.map((c) => `${c.name} [${c.guid}]`).join(", ")}`);
     return text((out.join("\n") || "Nothing to open or loot in reach.") + (rest.length ? `\n\nStill to do here:\n${rest.join("\n")}` : ""));
   });

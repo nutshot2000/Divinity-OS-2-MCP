@@ -70,6 +70,7 @@ tool("dos2_explore", "Where to go next in a big area. Lists the nearest edges of
         ...left.reads.map((o) => `  read: ${o.name} ${o.dist}m: dos2_use item=${o.guid}`),
         ...left.people.map((c) => `  talk: ${c.name} ${c.dist}m: dos2_talk target=${c.guid}`),
         ...left.locked.map((o) => `  locked: ${o.name} ${o.dist}m (needs a key or lockpicks)`),
+        ...left.carried,
       ];
       if (todo.length) out.push(`Still to do within sight (finish these before moving on; dos2_sweep opens the containers in one go):\n${todo.slice(0, 14).join("\n")}`);
     } catch { /* not essential */ }
