@@ -170,7 +170,8 @@ function Handlers.safe_path(args)
     if cache[k] == nil then cache[k] = cellInfo(grid, x, z) end
     return cache[k]
   end
-  local function free(c) return c and not c.blocked and not c.unknown and not c.hazard and c.height end
+  local ignoreHazards = false
+  local function free(c) return c and not c.blocked and not c.unknown and (ignoreHazards or not c.hazard) and c.height end
 
   -- The goal itself may be an object's cell (blocked) or in a hazard: accept the nearest free cell within 2 m.
   local goalCell = cell(gx, gz)
@@ -230,7 +231,13 @@ function Handlers.safe_path(args)
       if found then break end
     end
   end
-  if not found then return { error = "every route crosses fire, poison or another hazard (or is blocked)" } end
+  if not found then
+    -- Tell a hazard apart from no route at all: decks, ladders and bridges are often missing from the grid, and there
+    -- the game's own pathing still finds the way (Fort Joy's raised deck by the ladder, 2026-10-27).
+    ignoreHazards = true
+    if search(45) then return { error = "every route crosses fire, poison or another hazard" } end
+    return { error = "no route on the grid (decks, ladders or another floor)" }
+  end
 
   -- Walk back from the goal; keep a waypoint wherever the direction changes, and at least every 6 cells.
   local path = {}

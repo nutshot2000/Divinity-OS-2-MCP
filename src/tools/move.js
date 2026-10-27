@@ -71,7 +71,7 @@ export async function walkTo({ x, z, target, run = true, timeoutMs = 30000, allo
     // A person or object often stands on a cell the grid marks blocked: walk to it with the game's own pathing
     // (still stopping on damage). Only a hazard on every route is a reason to refuse.
     const blockedTarget = target != null && /blocked/.test(route.error ?? "") && !/hazard|fire|poison/.test(route.error);
-    if (route.error && (/Too far|multi-level/.test(route.error) || blockedTarget)) route = null;
+    if (route.error && (/Too far|multi-level|no route on the grid/.test(route.error) || blockedTarget)) route = null;
     else if (route.error) return { outcome: `not moving: ${route.error}. Pass allow_hazards=true to go anyway.`, refused: true };
   }
   const deadline = Date.now() + timeoutMs;
