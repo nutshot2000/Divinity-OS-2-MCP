@@ -219,6 +219,7 @@ tool("dos2_turn", "Play several actions of your turn in ONE call, in order, and 
       do: z.enum(["move", "cast", "attack", "use_item", "end_turn"]),
       target: z.string().optional(), x: z.number().optional(), z: z.number().optional(),
       skill: z.string().optional(), item: z.string().optional(),
+      allow_hazards: z.boolean().optional().describe("move: go through oil, fire or poison if every route does (the planner refuses otherwise)"),
     })).min(1).max(8) },
   async (a) => {
     const out = [];
@@ -240,7 +241,7 @@ tool("dos2_turn", "Play several actions of your turn in ONE call, in order, and 
           last = await afterAction(r.ap_before);
           out.push(`cast ${r.casting}${last.refused ? " - REFUSED (range, line of sight or requirement?)" : ""}`);
         } else if (act.do === "move") {
-          const m = await walkTo({ x: act.x, z: act.z, target: act.target, run: true, timeoutMs: 20000 });
+          const m = await walkTo({ x: act.x, z: act.z, target: act.target, run: true, timeoutMs: 20000, allowHazards: act.allow_hazards });
           out.push(m.refused ? `move REFUSED: ${m.outcome}` : `move: ${m.outcome}, now at ${m.x},${m.z}`);
           if (m.refused || m.hurt || !/arrived/.test(m.outcome ?? "")) { last = await state(); break; }
           last = await state();

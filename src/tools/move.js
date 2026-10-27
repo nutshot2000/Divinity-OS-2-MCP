@@ -33,7 +33,9 @@ async function waitForMove(event, timeoutMs, startHp, startedInCombat = false, s
     // Stop for fresh harm (a new status such as BURNING, or a real hit), not for poison or bleeding that was already
     // ticking before the move started.
     const newStatus = s.statuses.some((st) => !startStatuses.includes(st) && /BURNING|POISONED|BLEEDING|ACID|ELECTRIFIED|SHOCKED|FROZEN|NECROFIRE|SUFFOCATING|HIT/.test(st));
-    if (startHp != null && s.hp < startHp && (newStatus || startHp - s.hp >= 5)) {
+    // Not in combat only: a deliberate retreat or advance in a fight costs HP (attacks of opportunity, fire) whatever you do,
+    // and stopping halfway just strands the character in the worst place.
+    if (!startedInCombat && startHp != null && s.hp < startHp && (newStatus || startHp - s.hp >= 5)) {
       await call("move", { x: s.x, z: s.z, run: false }); // stand still where we are
       return { outcome: `stopped: took ${startHp - s.hp} damage on the way (${s.statuses.join(", ")})`, hurt: true, ...s };
     }
