@@ -28,6 +28,7 @@ function show(s) {
     (f.hit_chance != null && f.tags.includes("enemy") ? `, ${f.hit_chance}% to hit` : "") +
     (f.tags.length ? ` (${f.tags.join(", ")})` : "") + (f.statuses.length ? ` statuses: ${f.statuses.join(", ")}` : ""));
   return (log ? `${log}\n\n` : "") +
+    (s.switched_to ? `(Now acting as ${s.switched_to}: it is their turn.)\n` : "") +
     `${s.my_turn ? "YOUR TURN" : `${s.active}'s turn`}: ${s.me.name} ${hpText(s.me)}, ${s.me.ap} AP at ${s.me.x},${s.me.z}\n` +
     `turn order:\n${fighters.join("\n")}`;
 }
@@ -43,21 +44,35 @@ const state = async () => {
   return s;
 };
 
-/** After an action: wait until AP drops, the turn passes or the fight ends (max ~12 s). */
-async function afterAction(apBefore) {
+/** After an action: wait until AP drops, the skill is cast, the turn passes or the fight ends (max ~10 s). Skills that
+ *  cost 0 AP (Flesh Sacrifice) never lower AP, so their cast event counts as done too. */
+async function afterAction(apBefore, skill = null) {
   const log = [];
+  const cast = () => skill != null && log.some((e) => e.event === "cast" && e.skill === skill);
   for (let i = 0; i < 40; i++) {
     await sleep(250);
     const s = await state();
     log.push(...s.log);
-    if (!s.in_combat || !s.my_turn || s.me.ap < apBefore) break;
+    if (!s.in_combat || !s.my_turn || s.me.ap < apBefore || cast()) break;
   }
   await sleep(450); // let the animation and damage land
   const final = await state();
+  log.push(...final.log);
   // The game refuses actions silently (requirement not met, out of range, blocked): nothing changes at all.
-  final.refused = final.in_combat && final.my_turn && final.me.ap >= apBefore;
-  final.log = [...log, ...final.log];
+  final.refused = final.in_combat && final.my_turn && final.me.ap >= apBefore && !cast();
+  final.log = log;
   return final;
+}
+
+/** When the turn has come round to another party member, act as them from now on (the bridge's tools act for one
+ *  character at a time), so a party's turns follow each other without waiting for one member's turn to come back. */
+async function takeOverPartyTurn(s) {
+  if (!s.in_combat || s.my_turn || !s.party_turn || !s.active_guid) return s;
+  try { await call("party_select", { character: s.active_guid }); } catch { return s; }
+  const fresh = await state();
+  fresh.log = [...(s.log ?? []), ...fresh.log];
+  fresh.switched_to = fresh.me?.name;
+  return fresh;
 }
 
 /** Wait until it is the active character's turn again or combat ends (max ~50 s, under client timeouts). */
@@ -67,13 +82,14 @@ async function waitForTurn() {
   for (let i = 0; i < 100; i++) {
     s = await state();
     log.push(...s.log);
-    if (!s.in_combat || s.my_turn) break;
+    if (!s.in_combat || s.my_turn || s.party_turn) break;
     // Camera: follow whoever is acting (only if visible; the director checks).
     if (s.active_guid && s.active_guid !== watching) { watching = s.active_guid; await focus(watching, MEDIUM); }
     await sleep(500);
   }
-  if (!s.in_combat) await wide(); else await focus(null, MEDIUM);
   s.log = log;
+  s = await takeOverPartyTurn(s);
+  if (!s.in_combat) await wide(); else await focus(null, MEDIUM);
   return s;
 }
 
@@ -86,7 +102,7 @@ tool("dos2_combat", "Combat status: whose turn it is, your HP/armour/AP, and the
   "can see (HP, armour, AP, distance, statuses), plus what happened since the last call. On your turn it ends with the top of " +
   "the battle plan (hazards under you, low HP, high ground, who to focus); dos2_advice gives the whole plan.",
   {}, async () => {
-    const s = await state();
+    const s = await takeOverPartyTurn(await state());
     let out = show(s);
     if (s.in_combat && s.my_turn) { const p = await planHead(3); if (p) out += `${String.fromCharCode(10)}${String.fromCharCode(10)}PLAN (dos2_advice for all of it):${String.fromCharCode(10)}${p}`; }
     return text(out);
@@ -133,7 +149,7 @@ tool("dos2_cast", "Use a memorised skill (id from dos2_skills) on a target GUID,
     if (a.target) focusBetween(a.target, MEDIUM);
     const r = await call("cast", a);
     caption(`Casting ${r.casting}`);
-    return text(`Casting ${r.casting}\n` + show(await afterAction(r.ap_before)));
+    return text(`Casting ${r.casting}\n` + show(await afterAction(r.ap_before, a.skill)));
   });
 
 tool("dos2_end_turn", "End your turn, then wait while the other combatants act (up to ~50 s) and return the combat " +
@@ -223,7 +239,9 @@ tool("dos2_turn", "Play several actions of your turn in ONE call, in order, and 
     })).min(1).max(8) },
   async (a) => {
     const out = [];
+    const log = []; // everything that happened during the turn, not only after the last action
     let last = null, ended = false;
+    const keep = (s) => { log.push(...(s.log ?? [])); return s; };
     for (const act of a.actions) {
       try {
         if (act.do === "attack") {
@@ -231,42 +249,46 @@ tool("dos2_turn", "Play several actions of your turn in ONE call, in order, and 
           focusBetween(act.target, MEDIUM);
           const r = await call("attack", { target: act.target });
           caption(`Attacking ${r.attacking}`);
-          last = await afterAction(r.ap_before);
+          last = keep(await afterAction(r.ap_before));
           out.push(`attack ${r.attacking}${last.refused ? " - REFUSED (out of range or blocked?)" : ""}`);
         } else if (act.do === "cast") {
           if (!act.skill) throw new Error("cast needs a skill");
+          if (act.target == null && (act.x == null || act.z == null)) throw new Error("cast needs a target GUID, or x and z");
           if (act.target) focusBetween(act.target, MEDIUM);
           const r = await call("cast", { skill: act.skill, target: act.target, x: act.x, z: act.z });
           caption(`Casting ${r.casting}`);
-          last = await afterAction(r.ap_before);
+          last = keep(await afterAction(r.ap_before, act.skill));
           out.push(`cast ${r.casting}${last.refused ? " - REFUSED (range, line of sight or requirement?)" : ""}`);
         } else if (act.do === "move") {
           const m = await walkTo({ x: act.x, z: act.z, target: act.target, run: true, timeoutMs: 20000, allowHazards: act.allow_hazards });
           out.push(m.refused ? `move REFUSED: ${m.outcome}` : `move: ${m.outcome}, now at ${m.x},${m.z}`);
-          if (m.refused || m.hurt || !/arrived/.test(m.outcome ?? "")) { last = await state(); break; }
-          last = await state();
+          last = keep(await state());
+          if (m.refused || m.hurt || !/arrived/.test(m.outcome ?? "")) break;
         } else if (act.do === "use_item") {
           if (!act.item) throw new Error("use_item needs an item GUID");
           await call("use", { item: act.item });
           await sleep(900);
-          last = await state();
+          last = keep(await state());
           out.push("use_item done");
         } else if (act.do === "end_turn") {
           out.push("end turn");
           try { await call("end_turn"); } catch (e) { if (!/Not .*turn/.test(String(e.message))) throw e; }
-          for (let i = 0; i < 20; i++) { await sleep(200); const st = await state(); if (!st.in_combat || !st.my_turn) break; }
-          last = await waitForTurn();
+          for (let i = 0; i < 20; i++) { await sleep(200); const st = keep(await state()); if (!st.in_combat || !st.my_turn) break; }
+          last = keep(await waitForTurn());
           ended = true;
           break;
         }
-        if (last && (!last.in_combat || !last.my_turn)) break;
+        if (last && !last.in_combat) break;
+        if (last && !last.my_turn) { out.push("turn passed (no AP left)"); break; }
         if (last && last.refused) break;
       } catch (e) {
         out.push(`STOPPED at ${act.do}: ${String(e.message).split("\n")[0]}`);
         break;
       }
     }
-    if (!last) last = await state();
+    if (!last) last = keep(await state());
+    if (!ended) last = await takeOverPartyTurn(last);
+    last.log = log;
     let tail = show(last);
     if (last.in_combat && last.my_turn) { const p = await planHead(3); if (p) tail += `\n\nPLAN:\n${p}`; }
     return text(`${out.map((l, i) => `${i + 1}. ${l}`).join("\n")}\n\n${tail}`);

@@ -61,7 +61,12 @@ async function settle() {
 }
 
 tool("dos2_dialog", "Read the open dialogue: lines spoken since the last read and the numbered answers you can give.",
-  {}, async () => text(show(await readDialog())));
+  {}, async () => {
+    let d = await readDialog();
+    // Read right after a conversation starts, the screen often has nothing yet: give it a moment.
+    if (d.open && !d.lines.length && !d.answers.length) d = await settle();
+    return text(show(d));
+  });
 
 const onlyContinue = (d) => d.open && d.answers.length === 1 && /^\(continue\)$/i.test(d.answers[0]);
 
@@ -73,7 +78,8 @@ tool("dos2_answer", "Choose a dialogue answer by its number from dos2_dialog. Re
   async (a) => {
     // Show which answer is being given, in the player's words, over the character.
     try {
-      const { answers } = parse((await client("dialog_log", { since: 0 })).snapshots);
+      // The answers on screen are in the latest snapshots, which were already read: look back a few, not the whole log.
+      const { answers } = parse((await client("dialog_log", { since: Math.max(0, readUpTo - 60) })).snapshots);
       if (answers[a.answer]) await caption(`"${answers[a.answer].slice(0, 90)}"`);
     } catch { /* cosmetic */ }
     await client("ui_call", { ui: DIALOG_UI, fn: "QuestionPressed", args: [a.answer] });

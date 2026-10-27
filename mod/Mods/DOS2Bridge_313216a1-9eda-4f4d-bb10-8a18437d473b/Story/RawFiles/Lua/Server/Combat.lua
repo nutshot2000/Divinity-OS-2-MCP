@@ -86,6 +86,8 @@ function Handlers.combat(args)
   return {
     in_combat = true, combat_id = id,
     active = active and nameOfGuid(active), active_guid = active, my_turn = active ~= nil and BareGuid(active) == BareGuid(me.MyGuid),
+    -- Any party member's turn (the bridge switches to them, so a party of three does not wait for one member's turn).
+    party_turn = active ~= nil and Osiq("CharacterIsPartyMember", active) == 1,
     me = fighter(me, me, 0), fighters = fighters, log = log, log_last = CombatLogSeq,
   }
 end

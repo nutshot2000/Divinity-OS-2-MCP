@@ -142,6 +142,8 @@ local function isVisible(ui)
   return ok and v == true
 end
 
+BridgeShown = BridgeShown or {}   -- panel file -> true while the bridge has it on screen
+
 --- Close every open panel from PANELS and say which ones were closed.
 function ClientHandlers.tidy_ui()
   local closed = {}
@@ -157,8 +159,14 @@ function ClientHandlers.tidy_ui()
         -- engine's ui:Hide() (crash in the character sheet's own code, 2026-10-26, when a sheet the player had opened was
         -- hidden that way).
         local hideOnly = file == "containerInventory.swf" or file == "partyInventory.swf" or file == "characterSheet.swf"
-        pcall(function () ui:ExternalInterfaceCall(hideOnly and "hideUI" or "closeUI") end)
-        closed[#closed + 1] = isVisible(ui) and (label .. " (could not close)") or label
+        -- The inventory and character sheet are left alone when the watching player opened them; only screens the bridge
+        -- showed (show_inventory / show_sheet) are put away again.
+        local playersOwn = (file == "partyInventory.swf" or file == "characterSheet.swf") and not BridgeShown[file]
+        if not playersOwn then
+          pcall(function () ui:ExternalInterfaceCall(hideOnly and "hideUI" or "closeUI") end)
+          BridgeShown[file] = nil
+        end
+        if not playersOwn then closed[#closed + 1] = isVisible(ui) and (label .. " (could not close)") or label end
       end
     end
   end
@@ -307,10 +315,11 @@ function ClientHandlers.show_inventory()
   local sheet = Ext.UI.GetByType(SHEET_UI)
   local sheetShown = false
   if sheet ~= nil and sheetFilledIn() then
-    sheet:Show(); sheetShown = true
+    sheet:Show(); sheetShown = true; BridgeShown["characterSheet.swf"] = true
     pcall(function () sheet:GetRoot().stats_mc.ClickTab(0) end)   -- always the attributes tab, next to the equipment
   end
   ui:Show()
+  BridgeShown["partyInventory.swf"] = true
   return { visible = ui.OF_Visible, sheet = sheetShown }
 end
 
@@ -321,6 +330,7 @@ function ClientHandlers.show_sheet(args)
   local sheet = Ext.UI.GetByType(SHEET_UI)
   if sheet == nil or not sheetFilledIn() then error("No character sheet") end
   sheet:Show()
+  BridgeShown["characterSheet.swf"] = true
   pcall(function () sheet:GetRoot().stats_mc.ClickTab(args.tab or 0) end)
   return { visible = sheet.OF_Visible, tab = args.tab or 0 }
 end

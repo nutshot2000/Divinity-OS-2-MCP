@@ -44,7 +44,10 @@ async function waitForMove(event, timeoutMs, startHp, startedInCombat = false, s
     if (s.in_dialog) return { outcome: "dialogue started", ...s };
     const moved = !last || Math.hypot(s.x - last.x, s.z - last.z) > 0.2;
     if (moved) { last = s; stillSince = Date.now(); }
-    else if (Date.now() - stillSince > 2500) return { outcome: "stopped (blocked, unreachable or interrupted)", ...s };
+    else if (Date.now() - stillSince > 2500) {
+      return { outcome: startedInCombat && s.ap === 0 ? "stopped: out of AP for this turn" : "stopped (blocked, unreachable or interrupted)", ...s };
+    }
+    if (startedInCombat && s.ap === 0 && !moved) return { outcome: "stopped: out of AP for this turn", ...s };
   }
   return { outcome: "still walking at timeout", ...(last ?? {}) };
 }

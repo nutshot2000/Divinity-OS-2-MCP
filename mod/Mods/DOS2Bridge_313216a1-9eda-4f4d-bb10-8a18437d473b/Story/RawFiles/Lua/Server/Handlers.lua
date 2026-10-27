@@ -172,7 +172,7 @@ function Handlers.move_status(args)
     arrived = Arrivals[args.event] == true, x = p.x, z = p.z,
     dist_to_goal = gx and Dist(p, { x = gx, z = gz }) or nil,
     in_combat = Osiq("CharacterIsInCombat", me.MyGuid) == 1, in_dialog = me.InDialog,
-    hp = me.Stats.CurrentVitality, statuses = me:GetStatuses(),
+    hp = me.Stats.CurrentVitality, statuses = me:GetStatuses(), ap = me.Stats.CurrentAP,
   }
 end
 
