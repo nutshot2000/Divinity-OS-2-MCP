@@ -27,6 +27,11 @@ watching. This file is sent to you as the server's instructions; `dos2_help` ret
 
 ## Fighting well (and fast)
 
+Use the ground and statuses, not only damage. `dos2_advice` lists the combos in sight with a ready command:
+fire on oil or poison under enemies (never with a friend in it), electricity into water or blood (stuns),
+Decaying Touch then a heal on the same enemy (the heal hurts), Teleportation dropping a barrel on an enemy or an
+enemy into fire or poison. It also warns when an enemy resists an element you were about to use.
+
 Standing still and trading blows loses fights. Each turn:
 
 1. `dos2_combat` (it ends with the top of the plan) or `dos2_advice` for the whole plan: hazards under you first, then

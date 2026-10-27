@@ -17,6 +17,125 @@ local function anyStatus(statuses, pattern)
   return nil
 end
 
+-- Combos: the game's surface and status interactions, offered only when what they need is in sight and ready to cast.
+-- General mechanics the game teaches (fire lights oil, electricity stuns in water, Decaying turns healing into damage),
+-- never story knowledge.
+local HEALS = { "Restoration", "Heal", "FirstAid", "Cleanse", "Mend", "Regenerat" }
+local SURFACE_HAZ = { "Fire", "Poison", "Lava", "Deathfog", "Electrified" }
+
+local function surfaceAt(grid, x, z, names)
+  local c = grid and GridCell(grid, x, z)
+  if c == nil then return nil end
+  for _, n in ipairs(names) do if HasFlag(c.AiFlags, n) then return n end end
+  return nil
+end
+
+local function isHeal(id)
+  for _, h in ipairs(HEALS) do if tostring(id):find(h) then return true end end
+  return false
+end
+
+local function resistance(guid, dtype)
+  local c = GetChar(guid)
+  local ok, v = pcall(function () return c.Stats[dtype .. "Resistance"] end)
+  return ok and type(v) == "number" and v or 0
+end
+
+function Combos(me, enemies, allies, skills, grid, oilUnderFriend)
+  local out = {}
+  local byType, heals, teleport = {}, {}, nil
+  for _, k in ipairs(skills) do
+    local dt = tostring(k.damage_type or "")
+    byType[dt] = byType[dt] or {}
+    table.insert(byType[dt], k)
+    if isHeal(k.id) then heals[#heals + 1] = k end
+    if k.type == "Teleportation" then teleport = k end
+  end
+  local friendOn = function (names)
+    if surfaceAt(grid, me.x, me.z, names) then return true end
+    for _, a in ipairs(allies) do if surfaceAt(grid, a.x, a.z, names) then return true end end
+    return false
+  end
+
+  for _, e in ipairs(enemies) do
+    local name = string.format("%s [%s]", e.name, e.guid)
+    -- Decaying: healing hurts them (physical damage that ignores magic armour).
+    if anyStatus(e.statuses, "^DECAY") and #heals > 0 then
+      out[#out + 1] = string.format("COMBO: %s is DECAYING, so healing hurts it: cast %s on it (heals become damage).", name, heals[1].id)
+    end
+    -- Fire on oil or poison under them, if no friend stands in it.
+    local under = surfaceAt(grid, e.x, e.z, { "Oil", "Poison" })
+    if under and byType.Fire and not oilUnderFriend and not friendOn({ under }) then
+      out[#out + 1] = string.format("COMBO: %s stands in %s: %s sets it alight%s.", name, under:lower(), byType.Fire[1].id,
+        under == "Poison" and " (poison explodes)" or "")
+    end
+    -- Electricity into water or blood: stuns everyone standing in it.
+    local wet = surfaceAt(grid, e.x, e.z, { "Water", "Blood" })
+    if wet and byType.Air and not friendOn({ wet }) then
+      out[#out + 1] = string.format("COMBO: %s stands in %s: %s electrifies it and can stun.", name, wet:lower(), byType.Air[1].id)
+    end
+    -- Resistances the examine panel shows: avoid elements they shrug off (100% heals them).
+    for dt, list in pairs(byType) do
+      if dt ~= "" and dt ~= "Physical" and dt ~= "Piercing" then
+        local r = resistance(e.guid, dt)
+        if r >= 50 then out[#out + 1] = string.format("AVOID: %s has %d%% %s resistance: %s does little%s.", name, r, dt:lower(),
+          list[1].id, r >= 100 and " and HEALS it" or "") end
+      end
+    end
+  end
+
+  -- Decaying Touch then a heal on the same enemy, in one turn when the AP allows.
+  local decay, heal = nil, heals[1]
+  for _, k in ipairs(skills) do if tostring(k.id):find("Decay") then decay = k end end
+  if decay and heal and enemies[1] and (decay.ap or 0) + (heal.ap or 0) <= (me.ap or 0) then
+    out[#out + 1] = string.format("COMBO: %s on an enemy, then %s on the SAME enemy: the heal becomes physical damage (%d AP total).",
+      decay.id, heal.id, (decay.ap or 0) + (heal.ap or 0))
+  end
+
+  -- Teleportation: drop a barrel on an enemy, or an enemy into a hazard.
+  if teleport then
+    local reach = teleport.range or 13
+    local okL, seen = pcall(Handlers.look, { radius = reach, kind = "items", limit = 60 })
+    if okL and seen and seen.items then
+      for _, it in ipairs(seen.items) do
+        if tostring(it.name):find("Barrel") then
+          for _, e in ipairs(enemies) do
+            local d = math.sqrt((it.x - e.x) ^ 2 + (it.z - e.z) ^ 2)
+            if d <= reach then
+              out[#out + 1] = string.format("COMBO: Teleportation drops %s [%s] on %s [%s]: dos2_cast skill=%s target=%s x=%s z=%s " ..
+                "(heavy objects hurt; the barrel breaks and spills%s).", it.name, it.guid, e.name, e.guid, teleport.id, it.guid, e.x, e.z,
+                tostring(it.name):find("Oil") and " oil: then fire" or "")
+              break
+            end
+          end
+        end
+      end
+    end
+    for _, e in ipairs(enemies) do
+      if e.dist <= reach and grid then
+        local best
+        for dx = -12, 12 do
+          for dz = -12, 12 do
+            local x, z = e.x + dx, e.z + dz
+            local d2 = dx * dx + dz * dz
+            if d2 <= 144 and (best == nil or d2 < best.d2) then
+              local h = surfaceAt(grid, x, z, SURFACE_HAZ)
+              if h and not surfaceAt(grid, x, z, { "MovementBlock" }) then best = { d2 = d2, x = x, z = z, h = h } end
+            end
+          end
+        end
+        if best and best.d2 > 1 then
+          out[#out + 1] = string.format("COMBO: Teleportation throws %s [%s] into %s at %s,%s: dos2_cast skill=%s target=%s x=%s z=%s.",
+            e.name, e.guid, best.h:lower(), best.x, best.z, teleport.id, e.guid, best.x, best.z)
+        end
+      end
+    end
+  end
+  -- Keep the plan short: the first few ideas only.
+  for i = #out, 5, -1 do out[i] = nil end
+  return out
+end
+
 function Handlers.advise()
   local st = Handlers.combat({ since = 1e9 })
   if not st.in_combat then error("Not in combat: nothing to plan") end
@@ -135,7 +254,7 @@ function Handlers.advise()
   end
 
   -- 5. What I can actually use now.
-  local ready = {}
+  local ready, readySkills = {}, {}
   local okS, skills = pcall(Handlers.skills, {})
   if okS and skills then
     for _, k in ipairs(skills) do
@@ -144,11 +263,15 @@ function Handlers.advise()
         local okC, cost = pcall(function () return Ext.Stats.Get(k.id)["Magic Cost"] end)
         if okC and type(cost) == "number" and cost > 0 and (Osiq("CharacterGetSourcePoints", me.guid) or 0) < cost then srcOk = false end
         local fire = #oilUnder > 0 and tostring(k.damage_type) == "Fire"
-        if srcOk then ready[#ready + 1] = string.format("%s (%d AP%s)%s", k.id, k.ap or 0, k.range and (", " .. math.floor(k.range) .. " m") or "",
-          fire and " [FIRE: not while oil is underfoot]" or "") end
+        if srcOk then
+          readySkills[#readySkills + 1] = k
+          ready[#ready + 1] = string.format("%s (%d AP%s)%s", k.id, k.ap or 0, k.range and (", " .. math.floor(k.range) .. " m") or "",
+            fire and " [FIRE: not while oil is underfoot]" or "")
+        end
       end
     end
   end
+  for _, line in ipairs(Combos(me, enemies, allies, readySkills, grid, #oilUnder > 0)) do add(4.5, line) end
   add(5, string.format("%d AP. Ready skills: %s.", me.ap or 0, #ready > 0 and table.concat(ready, ", ") or "none (basic attack, potions, moving)"))
 
   table.sort(plan, function (a, b) return a.prio < b.prio end)

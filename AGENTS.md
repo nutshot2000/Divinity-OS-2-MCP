@@ -72,7 +72,7 @@ character's head), keep the pace up, and prefer the text tools over screenshots.
 | `dos2_wait_turn` | Wait until it is your turn |
 | `dos2_preview` | Who a skill or item (grenade, scroll) would hit at a target or spot, allies included, and if it is in range |
 | `dos2_use_on` | Throw or read an inventory item at a target or spot (grenades, skill scrolls); used up only if it happens |
-| `dos2_advice` | Battle plan for this turn: hazards under you, low HP, high ground, which enemy to focus, ready skills, when to flee |
+| `dos2_advice` | Battle plan for this turn: hazards under you, low HP, high ground, which enemy to focus, combos in sight (fire on oil, shock in water, Decaying plus heals, barrels or enemies moved by Teleportation), resistances to avoid, ready skills, when to flee |
 | `dos2_turn` | Play a whole turn in one call: a list of move / cast / attack / use_item / end_turn actions |
 | `dos2_flee` | Leave a fight the party is losing (only while outnumbered, as in the game) |
 | `dos2_tactics` | Positioning map: squares reachable with this turn's AP, high ground, hazards, enemies, best spots |
