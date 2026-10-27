@@ -316,6 +316,8 @@ function ClientHandlers.show_inventory()
   local sheetShown = false
   if sheet ~= nil and sheetFilledIn() then
     sheet:Show(); sheetShown = true; BridgeShown["characterSheet.swf"] = true
+    -- Items equipped by script do not redraw the equipment slots by themselves (a hand-made equip sends updateItems).
+    pcall(function () sheet:GetRoot().updateItems() end)
     pcall(function () sheet:GetRoot().stats_mc.ClickTab(0) end)   -- always the attributes tab, next to the equipment
   end
   ui:Show()
@@ -331,6 +333,7 @@ function ClientHandlers.show_sheet(args)
   if sheet == nil or not sheetFilledIn() then error("No character sheet") end
   sheet:Show()
   BridgeShown["characterSheet.swf"] = true
+  pcall(function () sheet:GetRoot().updateItems() end)
   pcall(function () sheet:GetRoot().stats_mc.ClickTab(args.tab or 0) end)
   return { visible = sheet.OF_Visible, tab = args.tab or 0 }
 end
