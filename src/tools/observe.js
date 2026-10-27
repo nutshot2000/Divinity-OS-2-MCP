@@ -62,6 +62,7 @@ tool("dos2_explore", "Where to go next in a big area. Lists the nearest edges of
     try {
       const left = await whatsLeft(25);
       const todo = [
+        ...left.bodies.map((c) => `  loot body: ${c.name} ${c.dist}m: dos2_move target=${c.guid}, then dos2_loot container=${c.guid} take="all"`),
         ...left.containers.map((o) => `  open: ${o.name} ${o.dist}m: dos2_use item=${o.guid} take=true`),
         ...left.reads.map((o) => `  read: ${o.name} ${o.dist}m: dos2_use item=${o.guid}`),
         ...left.people.map((c) => `  talk: ${c.name} ${c.dist}m: dos2_talk target=${c.guid}`),
