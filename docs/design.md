@@ -259,3 +259,12 @@ after the cast) has `SourceHandle`/`SourcePosition` (what moves) and `TargetPosi
 the state is `Preparing` makes the real skill do the move. Setting only the source sent Beast to 0,0 (the landing
 position was empty), so `Combat.lua` always sets them together and sets `RequestExit` if that fails. Entity objects
 must be fetched again each tick (held ones expire). A party member landing took no damage.
+
+## Picking things up and long routes (2026-10-27)
+
+- `CharacterUseItem` on a loose bottle lying on the ground drank it. A click in the game picks loose items up, so
+  `Handlers.use` now moves items that can be carried (`CanBePickedUp`) and are not containers into the inventory with
+  `ItemToInventory`; containers, doors, levers and ladders are still used.
+- `safe_path` searched a box 12 m around start and goal only, so a 188 m detour round a cliff read as "every route
+  crosses a hazard". It now widens the box (12, 45, then 90 m) before giving up.
+- `dos2_explore` lists seen ground no walk reaches but a 13 m Teleportation hop does, with where to stand and land.

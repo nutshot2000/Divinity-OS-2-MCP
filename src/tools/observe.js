@@ -57,6 +57,9 @@ tool("dos2_explore", "Where to go next in a big area. Lists the nearest edges of
     else out.push("No unexplored edge is reachable from here: this part is finished. The way on is a door, stairs or " +
       "ladder you have not used yet, a locked or hazard-blocked route, or somewhere further than the search radius.");
     if (r.visited_edges.length) out.push(`Edges you already stood beside (dark rock or sea, not a way on):\n${r.visited_edges.map(line).join("\n")}`);
+    if (r.teleport_hops?.length) out.push(`Seen ground no path reaches, but a Teleportation skill could (13 m; it moves another ` +
+      `party member, never the caster):\n${r.teleport_hops.map((h) => `  ${h.dir}, a ${h.size} m2 patch: stand someone at ` +
+      `${h.stand.x},${h.stand.z} (${h.walk}m walk), land them at ${h.land.x},${h.land.z} (${h.gap}m hop)`).join("\n")}`);
     if (r.truncated) out.push("The search hit its size limit: this is the nearest part of a very large area.");
     // What is left to do right here, so nothing is skipped on the way to the next edge.
     try {

@@ -204,6 +204,19 @@ function Handlers.use(args)
     end)
   end
   if Osiq("ItemIsContainer", item.MyGuid) == 1 then LastOpened = item.MyGuid end
+  -- A click on a loose item on the ground (a bottle, a weapon) picks it up; only containers, doors, levers and the like are
+  -- "used". CharacterUseItem on a ground bottle drank it (2026-10-27), so pick up what can be carried.
+  local owner = Osiq("GetInventoryOwner", item.MyGuid)
+  local onGround = owner == nil or owner == ""
+  local canCarry = false
+  pcall(function () canCarry = item.CanBePickedUp == true end)
+  if onGround and canCarry and not args.use and Osiq("ItemIsContainer", item.MyGuid) ~= 1 then
+    local name = NameOf(item) or ""
+    if name:find("^Unidentified %[") then error("That item's name never resolved; picking it up crashed the game before") end
+    Osi.ItemToInventory(item.MyGuid, me.MyGuid, item.Amount or 1, 0, 0)
+    Uses[BareGuid(item.MyGuid)] = "picked up"
+    return { using = name, guid = item.MyGuid, event = event, tags = itemTags(item), picked_up = true }
+  end
   -- CharacterUseItem(character, item, event)
   Osi.CharacterUseItem(me.MyGuid, item.MyGuid, event)
   return { using = NameOf(item), guid = item.MyGuid, event = event, tags = itemTags(item) }

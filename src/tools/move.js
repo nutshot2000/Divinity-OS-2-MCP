@@ -137,6 +137,11 @@ export async function useItem(a) {
       last = now;
     }
     const started = await call("use", { item: a.item });
+    if (started.picked_up) {
+      markUsed(started.guid);
+      await caption(`Picked up ${started.using}`);
+      return text(`${started.using}: picked up (it is in your inventory now; dos2_use it there to drink, eat or read it).`);
+    }
     await caption(started.tags.includes("container") ? `Opening ${started.using}` : near.carried ? `Using ${started.using}` : `${started.using}`);
     const deadline = Date.now() + (a.timeout ?? 20) * 1000;
     let s = {};

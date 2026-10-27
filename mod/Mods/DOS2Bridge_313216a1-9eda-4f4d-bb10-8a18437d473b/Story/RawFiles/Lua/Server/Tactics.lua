@@ -164,11 +164,6 @@ function Handlers.safe_path(args)
   if here == nil or math.abs(here - p.y) > 1.5 then
     return { error = "multi-level: the grid describes another floor here, so no route can be planned" }
   end
-  local margin = 12
-  local minX, maxX = math.min(sx, gx) - margin, math.max(sx, gx) + margin
-  local minZ, maxZ = math.min(sz, gz) - margin, math.max(sz, gz) + margin
-  if (maxX - minX) * (maxZ - minZ) > 120 * 120 then error("Too far for one move: pick a closer point") end
-
   local cache = {}
   local function cell(x, z)
     local k = x .. "," .. z
@@ -192,10 +187,16 @@ function Handlers.safe_path(args)
   end
 
   local start = sx .. "," .. sz
-  local dist, prev = { [start] = 0 }, {}
+  local goalKey = gx .. "," .. gz
+  local dist, prev
+  -- Search a box around start and goal; when the way round leaves it (a long detour around a cliff), widen the box.
+  -- Live 2026-10-27: the east side of Fort Joy's beach was a 188 m walk away, far outside the first box.
+  local function search(margin)
+    local minX, maxX = math.min(sx, gx) - margin, math.max(sx, gx) + margin
+    local minZ, maxZ = math.min(sz, gz) - margin, math.max(sz, gz) + margin
+  dist, prev = { [start] = 0 }, {}
   local open = NewHeap()
   open.push({ sx, sz }, 0)
-  local goalKey = gx .. "," .. gz
   while open.n > 0 do
     local cur, best = open.pop()
     local ck = cur[1] .. "," .. cur[2]
@@ -218,7 +219,18 @@ function Handlers.safe_path(args)
       end
     end
   end
-  if dist[goalKey] == nil then return { error = "every route crosses fire, poison or another hazard (or is blocked)" } end
+    return dist[goalKey] ~= nil
+  end
+  local span = math.max(math.abs(gx - sx), math.abs(gz - sz))
+  if span > 120 then error("Too far for one move: pick a closer point") end
+  local found = false
+  for _, margin in ipairs({ 12, 45, 90 }) do
+    if (span + 2 * margin) <= 220 or margin == 12 then
+      found = search(margin)
+      if found then break end
+    end
+  end
+  if not found then return { error = "every route crosses fire, poison or another hazard (or is blocked)" } end
 
   -- Walk back from the goal; keep a waypoint wherever the direction changes, and at least every 6 cells.
   local path = {}

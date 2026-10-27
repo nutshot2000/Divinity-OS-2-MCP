@@ -220,6 +220,60 @@ function Handlers.explore(args)
   end
   table.sort(clusters, function (a, b) return a.dist < b.dist end)
 
+  -- Seen ground that no walk reaches but a Teleportation skill could (13 m): a ledge across a gap, the far side of a wall.
+  -- Each patch is reported once with the nearest reachable square to stand the teleported one on.
+  local HOP = math.floor(12 / STEP) -- a little under 13 m, so the landing is surely in reach
+  local hops, hopSeen = {}, {}
+  local function isLand(ix, iz)
+    local c = cell(ix, iz)
+    return not c.unknown and not c.blocked and not c.hazard and c.height ~= nil and dist[key(ix, iz)] == nil
+  end
+  if not truncated then
+    for ix = sx - R, sx + R do
+      for iz = sz - R, sz + R do
+        local k = key(ix, iz)
+        if not hopSeen[k] and isLand(ix, iz) then
+          -- The patch of unreachable ground this cell belongs to.
+          local stack, members = { { ix, iz } }, {}
+          hopSeen[k] = true
+          while #stack > 0 and #members < 400 do
+            local m = table.remove(stack)
+            members[#members + 1] = m
+            for _, s in ipairs(NEIGH) do
+              local nx, nz = m[1] + s[1], m[2] + s[2]
+              local nk = key(nx, nz)
+              if not hopSeen[nk] and math.abs(nx - sx) <= R and math.abs(nz - sz) <= R and isLand(nx, nz) then
+                hopSeen[nk] = true; stack[#stack + 1] = { nx, nz }
+              end
+            end
+          end
+          -- Patches of a few metres are usually rock tops and roof edges; skip them.
+          if #members >= 6 then
+            local best
+            for _, m in ipairs(members) do
+              for dx = -HOP, HOP do
+                for dz = -HOP, HOP do
+                  local d2 = dx * dx + dz * dz
+                  local rk = key(m[1] + dx, m[2] + dz)
+                  if d2 <= HOP * HOP and dist[rk] ~= nil and (best == nil or d2 < best.d2 or (d2 == best.d2 and dist[rk] < best.walk)) then
+                    best = { d2 = d2, walk = dist[rk], from = { m[1] + dx, m[2] + dz }, to = m }
+                  end
+                end
+              end
+            end
+            if best then
+              local fx, fz, tx, tz = best.from[1] * STEP, best.from[2] * STEP, best.to[1] * STEP, best.to[2] * STEP
+              hops[#hops + 1] = { stand = { x = fx, z = fz }, land = { x = tx, z = tz }, gap = Round(math.sqrt(best.d2) * STEP),
+                walk = Round(best.walk), size = #members * STEP * STEP, dir = compass(tx - p.x, tz - p.z) }
+            end
+          end
+        end
+      end
+    end
+  end
+  table.sort(hops, function (a, b) return a.walk < b.walk end)
+  for i = #hops, 6, -1 do hops[i] = nil end
+
   local fresh, stale = {}, {}
   for _, c in ipairs(clusters) do
     if c.been then stale[#stale + 1] = c else fresh[#fresh + 1] = c end
@@ -230,6 +284,6 @@ function Handlers.explore(args)
     x = Round(p.x), z = Round(p.z), edges = fresh, visited_edges = stale,
     reachable_m2 = reachable * STEP * STEP,
     covered_pct = reachable > 0 and math.floor(100 * visitedReach / reachable + 0.5) or 0,
-    places_visited = visited.n, truncated = truncated,
+    places_visited = visited.n, truncated = truncated, teleport_hops = hops,
   }
 end
