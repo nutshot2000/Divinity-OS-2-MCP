@@ -278,3 +278,12 @@ must be fetched again each tick (held ones expire). A party member landing took 
   `carried_todo` reads each carried item's use actions (`Book`, `Recipe`, `SkillBook`) and containers; `dos2_explore`
   and `dos2_sweep` list the ones not dealt with yet. Bags the party carries report the world origin as their position,
   so `openContainer` treats them as always in reach.
+
+## Trade window (2026-10-27)
+
+The trade screen (`trade.swf`) opens by itself after a trader's "what do you sell" answer, then a dialogue answer
+("Sure thing", continue) and is closed by `tidy_ui` on the next tool call. Holding it open while an extra `UICall`
+subscriber (filtered to `trade.swf` and `uiCraft.swf`, reading `e.UI.Path` on every call) recorded its calls crashed the
+whole game (the process was gone). Do not subscribe to UICall for the trade screen; the crafting screen's calls were
+recorded fine without it open at the same time as a dialogue. Next try: read the screen's own arrays (`addItem`,
+`setGoldValues`) from the invoke log and press its buttons by name from a one-shot call, with a quicksave first.
