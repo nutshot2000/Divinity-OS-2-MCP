@@ -257,3 +257,10 @@ function Handlers.progress()
   end
   return out
 end
+
+--- Everything the bridge asks after each tool call, in one round trip: is the acting character in combat, and the party's
+--- XP and unspent points (see Handlers.progress).
+function Handlers.post()
+  local me = ActiveChar()
+  return { in_combat = Osiq("CharacterIsInCombat", me.MyGuid) == 1, party = Handlers.progress() }
+end

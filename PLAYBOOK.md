@@ -96,7 +96,10 @@ edges of the unexplored (`?`) ground by walking distance and compass direction, 
 1. `dos2_explore` – pick the nearest edge (or one in a direction that makes sense).
 2. `dos2_move` there, then `dos2_look`: open containers, loot bodies, read notes, talk to people (`dos2_minimap`
    shows who is about).
-3. `dos2_explore` again. Repeat until it says no edges are left; "% stood on" shows how much you have covered.
+3. `dos2_sweep` opens and empties every unowned container within reach in one call (instead of one `dos2_use` each).
+   `dos2_explore` ends with "Still to do within sight": unopened containers, unread notes, people not yet talked to.
+   Finish those before moving on; the bridge remembers what you have already done.
+4. `dos2_explore` again. Repeat until it says no edges are left; "% stood on" shows how much you have covered.
 
 The record is kept in a file and survives game restarts; `dos2_explore reset=true` wipes it for this level (do that
 when starting a new playthrough). Edges you already stood beside are listed apart as "not a way on". If you notice you are in the same place twice,

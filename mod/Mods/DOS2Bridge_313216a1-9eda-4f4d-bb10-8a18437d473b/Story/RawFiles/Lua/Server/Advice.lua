@@ -39,6 +39,16 @@ function Handlers.advise()
       if HasFlag(info.AiFlags, h) then hazard = h; break end
     end
   end
+  -- Oil (or other flammable ground) under me or a friend: fire would set the whole party alight.
+  local oilUnder = {}
+  if grid then
+    local function onOil(x, z)
+      local c = GridCell(grid, x, z)
+      return c ~= nil and (HasFlag(c.AiFlags, "Oil"))
+    end
+    if onOil(me.x, me.z) then oilUnder[#oilUnder + 1] = me.name end
+    for _, a in ipairs(allies) do if onOil(a.x, a.z) then oilUnder[#oilUnder + 1] = a.name end end
+  end
   local burning = anyStatus(me.statuses, "^BURNING")
   local poisoned = anyStatus(me.statuses, "^POISONED")
   local hpFrac = (me.hp or 0) / math.max(1, me.max_hp or 1)
@@ -59,6 +69,11 @@ function Handlers.advise()
   for _, e in ipairs(enemies) do
     if e.dist <= 2.5 then adjacent = adjacent + 1 end
     if e.dist <= 9 then near = near + 1 end
+  end
+
+  if #oilUnder > 0 then
+    add(1, "OIL is under " .. table.concat(oilUnder, ", ") .. ". Do NOT use fire (Dragon's Blaze, fire grenades, incinerate) this turn: " ..
+      "it ignites the oil and burns everyone standing in it. Move out first, or use physical and non-fire skills.")
   end
 
   -- 0. Hazards first: nothing is worth more than not burning.
@@ -128,7 +143,9 @@ function Handlers.advise()
         local srcOk = true
         local okC, cost = pcall(function () return Ext.Stats.Get(k.id)["Magic Cost"] end)
         if okC and type(cost) == "number" and cost > 0 and (Osiq("CharacterGetSourcePoints", me.guid) or 0) < cost then srcOk = false end
-        if srcOk then ready[#ready + 1] = string.format("%s (%d AP%s)", k.id, k.ap or 0, k.range and (", " .. math.floor(k.range) .. " m") or "") end
+        local fire = #oilUnder > 0 and tostring(k.damage_type) == "Fire"
+        if srcOk then ready[#ready + 1] = string.format("%s (%d AP%s)%s", k.id, k.ap or 0, k.range and (", " .. math.floor(k.range) .. " m") or "",
+          fire and " [FIRE: not while oil is underfoot]" or "") end
       end
     end
   end

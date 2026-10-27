@@ -39,41 +39,38 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 const XP_MARK = join(tmpdir(), "dos2-bridge-xp-mark.json");
 let lastXp = (() => { try { return JSON.parse(readFileSync(XP_MARK, "utf8")); } catch { return {}; } })();
-let lastProgressCheck = 0;
-async function progressNote() {
-  if (Date.now() - lastProgressCheck < 8000) return ""; // not on every call: it costs a round trip
-  lastProgressCheck = Date.now();
-  let party;
-  try { party = await call("progress", {}, 5000); } catch { return ""; }
+/** XP gains and level-up points, from the party list the mod returns with every post-tool check. */
+function progressNote(party) {
   let note = "";
   const now = {};
   for (const m of party) {
     now[m.guid] = m.xp;
     const before = lastXp[m.guid];
-    if (before != null && m.xp > before) note += `
-[+${m.xp - before} XP for ${m.name} (now ${m.xp}).]`;
+    if (before != null && m.xp > before) note += `${String.fromCharCode(10)}[+${m.xp - before} XP for ${m.name} (now ${m.xp}).]`;
   }
   const spend = party.filter((m) => m.points > 0);
-  if (spend.length) note += `
-[LEVEL UP: ${spend.map((m) => `${m.name} has ${m.points} point${m.points > 1 ? "s" : ""} to spend`).join("; ")}. ` +
+  if (spend.length) note += `${String.fromCharCode(10)}[LEVEL UP: ${spend.map((m) => `${m.name} has ${m.points} point${m.points > 1 ? "s" : ""} to spend`).join("; ")}. ` +
     "Out of combat, use dos2_sheet and dos2_level_up (attributes, abilities, talents) and dos2_memorise for new skills.]";
   lastXp = now;
   try { writeFileSync(XP_MARK, JSON.stringify(now)); } catch { /* best effort */ }
   return note;
 }
 
-/** After every tool: dismiss tutorial popups (they block play) and report their text, and close panels left open on
- *  screen (loot windows from opening containers, inventory, journal, ...), so nothing piles up while playing. */
-async function tutorialNote() {
+/** After every tool, two round trips (one to each half of the mod): the client dismisses tutorial popups (they block play,
+ *  their text is reported) and closes panels left open on screen; the server says whether we are in combat and what the
+ *  party's XP and points are. Returns the text to append. */
+async function afterTool(name) {
   let note = "";
   try {
-    const shown = await call("tutorials", {}, 5000, "client");
-    note += shown.map((t) => `\n\n[Tutorial dismissed: ${t.title} — ${String(t.text).replace(/<[^>]*>/g, "")}]`).join("");
+    const c = await call("post_tool", {}, 5000, "client");
+    note += c.tutorials.map((t) => `${String.fromCharCode(10, 10)}[Tutorial dismissed: ${t.title} — ${String(t.text).replace(/<[^>]*>/g, "")}]`).join("");
+    if (c.closed.length) note += `${String.fromCharCode(10)}[Closed on screen: ${c.closed.join(", ")}]`;
   } catch { /* client half not running (main menu, loading): nothing to dismiss */ }
   try {
-    const closed = await call("tidy_ui", {}, 5000, "client");
-    if (closed.length) note += `\n[Closed on screen: ${closed.join(", ")}]`;
-  } catch { /* same */ }
+    const s = await call("post", {}, 5000);
+    note += progressNote(s.party);
+    if (s.in_combat && !SHOWS_COMBAT.has(name)) note += COMBAT_BANNER;
+  } catch { /* game loading */ }
   return note;
 }
 
@@ -85,9 +82,7 @@ export function tool(name, description, shape, fn) {
     } catch (e) {
       result = fail(String(e.message || e));
     }
-    let note = await tutorialNote();
-    note += await progressNote();
-    if (!SHOWS_COMBAT.has(name) && await inCombat()) note += COMBAT_BANNER;
+    const note = await afterTool(name);
     if (note) {
       const first = result.content.find((c) => c.type === "text");
       if (first) first.text += note; else result.content.push({ type: "text", text: note.trim() });

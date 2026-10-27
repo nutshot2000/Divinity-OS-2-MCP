@@ -1,6 +1,7 @@
 // Tools: movement and interaction.
 import { tool, call, text, json, z, guid, inCombat } from "../core.js";
 import { focus, wide, CLOSE, caption } from "../director.js";
+import { markUsed } from "../done.js";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -108,13 +109,8 @@ tool("dos2_move", "Walk the active character (the party follows) to a point or a
       (r.hp != null ? `, ${r.hp} HP` : ""));
   });
 
-tool("dos2_use", "Use an item with the active character: open a container or door, pull a lever, pick something up. " +
-  "The character walks there first. A container's contents are listed once it is open; take=true also takes everything " +
-  "in it (owned items stay), saving a dos2_loot call.",
-  { item: guid, timeout: z.number().min(2).max(55).optional().describe("Seconds to wait (default 20)"),
-    take: z.boolean().optional().describe("Containers: take everything that is not owned by someone else"),
-    steal: z.boolean().optional().describe("Open something that belongs to someone else anyway (theft). Default: refused") },
-  async (a) => {
+/** Use one item (see the dos2_use tool). quick=true holds the loot window for only a second (for sweeps). */
+export async function useItem(a) {
     // CharacterUseItem does not walk there (and still reports success), so get within reach first.
     const near = await call("use_status", { item: a.item });
     // Someone else's property: opening it is stealing, which the game marks on the item and which can turn the owner and
@@ -162,10 +158,12 @@ tool("dos2_use", "Use an item with the active character: open a container or doo
       // Leave the book on screen long enough for the watcher to read some of it (panels close after the tool returns).
       await sleep(Math.min(12, READ_SECONDS + body.length / 40) * 1000 * (READ_SECONDS > 0 ? 1 : 0));
       await wide();
+      markUsed(started.guid);
       return text(`${started.using} reads:\n${body}`);
     }
     // Same for a loot window: show what is inside for a moment.
-    if (s.opened && LOOT_SECONDS > 0) await sleep(LOOT_SECONDS * 1000);
+    if (s.opened && LOOT_SECONDS > 0) await sleep((a.quick ? Math.min(1, LOOT_SECONDS) : LOOT_SECONDS) * 1000);
+    if (s.result === "used" || s.opened) markUsed(started.guid);
     await wide();
     // Stairs, ladders and hatches move the character: say where to, instead of a distance to the item left behind.
     const after = await poll("move_status", { event: "" });
@@ -191,7 +189,15 @@ tool("dos2_use", "Use an item with the active character: open a container or doo
     }
     return text(`${started.using}: ${outcome}` + (s.opened ? ", now open" : "") +
       (s.dist != null ? ` (${s.dist}m away)` : "") + contents);
-  });
+}
+
+tool("dos2_use", "Use an item with the active character: open a container or door, pull a lever, pick something up. " +
+  "The character walks there first. A container's contents are listed once it is open; take=true also takes everything " +
+  "in it (owned items stay), saving a dos2_loot call.",
+  { item: guid, timeout: z.number().min(2).max(55).optional().describe("Seconds to wait (default 20)"),
+    take: z.boolean().optional().describe("Containers: take everything that is not owned by someone else"),
+    steal: z.boolean().optional().describe("Open something that belongs to someone else anyway (theft). Default: refused") },
+  (a) => useItem(a));
 
 tool("dos2_say", "Narrate: show a short line of overhead text on the active character so the watching player knows " +
   "what you are about to do and why. Keep it under ~80 characters.",

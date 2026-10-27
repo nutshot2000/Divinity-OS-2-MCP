@@ -1,5 +1,7 @@
 // Tools: observe.
 import { tool, modTool, call, text, json, z, inCombat } from "../core.js";
+import { whatsLeft } from "./sweep.js";
+import { resetDone } from "../done.js";
 
 tool("dos2_status", "Party overview: level (map), active character, each party member's position, HP, armour, AP, " +
   "level, and whether they are in combat, in dialogue or dead.",
@@ -46,6 +48,7 @@ tool("dos2_explore", "Where to go next in a big area. Lists the nearest edges of
   async (a) => {
     if (await inCombat()) return text("Not exploring: you are in combat. Call dos2_combat and play the fight (dos2_tactics, " +
       "dos2_attack, dos2_cast, dos2_end_turn). Explore again when the fight is over.");
+    if (a.reset) resetDone();
     const r = await call("explore", a);
     const line = (e) => `  ${e.dist}m ${e.dir}: dos2_move x=${e.x} z=${e.z}  (a ${e.size}m stretch of unexplored edge)`;
     const out = [`At ${r.x},${r.z}. Reachable explored ground: about ${r.reachable_m2} m2, ${r.covered_pct}% of it stood on ` +
@@ -55,5 +58,16 @@ tool("dos2_explore", "Where to go next in a big area. Lists the nearest edges of
       "ladder you have not used yet, a locked or hazard-blocked route, or somewhere further than the search radius.");
     if (r.visited_edges.length) out.push(`Edges you already stood beside (dark rock or sea, not a way on):\n${r.visited_edges.map(line).join("\n")}`);
     if (r.truncated) out.push("The search hit its size limit: this is the nearest part of a very large area.");
+    // What is left to do right here, so nothing is skipped on the way to the next edge.
+    try {
+      const left = await whatsLeft(25);
+      const todo = [
+        ...left.containers.map((o) => `  open: ${o.name} ${o.dist}m: dos2_use item=${o.guid} take=true`),
+        ...left.reads.map((o) => `  read: ${o.name} ${o.dist}m: dos2_use item=${o.guid}`),
+        ...left.people.map((c) => `  talk: ${c.name} ${c.dist}m: dos2_talk target=${c.guid}`),
+        ...left.locked.map((o) => `  locked: ${o.name} ${o.dist}m (needs a key or lockpicks)`),
+      ];
+      if (todo.length) out.push(`Still to do within sight (finish these before moving on; dos2_sweep opens the containers in one go):\n${todo.slice(0, 14).join("\n")}`);
+    } catch { /* not essential */ }
     return text(out.join("\n"));
   });

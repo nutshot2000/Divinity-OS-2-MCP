@@ -5,6 +5,7 @@ import { server } from "./core.js";
 import "./tools/observe.js";
 import "./tools/move.js";
 import "./tools/loot.js";
+import "./tools/sweep.js";
 import "./tools/dialog.js";
 import "./tools/combat.js";
 import "./tools/character.js";

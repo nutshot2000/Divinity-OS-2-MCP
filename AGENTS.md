@@ -57,6 +57,7 @@ character's head), keep the pace up, and prefer the text tools over screenshots.
 | `dos2_move` | Walk to x,z or a GUID along a route that avoids fire, poison and other hazards; stops at once on damage; refuses if every route crosses a hazard (`allow_hazards=true` to go anyway) |
 | `dos2_inventory` | List your inventory (slot, rarity and, once identified, armour or damage; `equipment=true` for gear only); `dos2_use` an item to drink, eat or read it |
 | `dos2_use` | Use an item: open containers and doors, pull levers, take stairs and ladders (walks there first) |
+| `dos2_sweep` | Open every container within reach and take what is not owned (skips owned and locked ones); lists notes to read and people to talk to |
 | `dos2_loot` | List an opened container or a dead body you stand next to; `take="all"` or `take=[GUIDs]` to take; owned items are left alone |
 | `dos2_give` | Hand an item to another party member (then `dos2_party action=select` them and `dos2_equip` it) |
 | `dos2_equip` | Equip a weapon, shield or armour from your inventory (attribute requirements checked) |

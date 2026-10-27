@@ -334,3 +334,12 @@ function ClientHandlers.show_sheet(args)
   pcall(function () sheet:GetRoot().stats_mc.ClickTab(args.tab or 0) end)
   return { visible = sheet.OF_Visible, tab = args.tab or 0 }
 end
+
+--- What the bridge does on the client after every tool call, in one round trip: dismiss tutorial boxes (returning their
+--- text) and put away panels left open (returning their names).
+function ClientHandlers.post_tool()
+  local shown, closed = {}, {}
+  pcall(function () shown = ClientHandlers.tutorials() end)
+  pcall(function () closed = ClientHandlers.tidy_ui() end)
+  return { tutorials = shown, closed = closed }
+end

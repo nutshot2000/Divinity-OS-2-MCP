@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { tool, call, text, z, guid } from "../core.js";
 import { walkTo } from "./move.js";
 import { focusBetween, wide, CLOSE, caption } from "../director.js";
+import { markTalked } from "../done.js";
 
 const DIALOG_UI = 14;
 const client = (cmd, args = {}) => call(cmd, args, 15000, "client");
@@ -139,6 +140,7 @@ tool("dos2_talk", "Walk up to a character and start talking, as clicking on them
     if (m.refused || m.hurt) return text(`Did not reach them: ${m.outcome}`);
     await focusBetween(a.target, CLOSE); // close-up on both speakers
     const r = await call("talk", { target: a.target });
+    markTalked(a.target);
     await caption(`Talking to ${r.talking_to}`);
     const d = await settle();
     if (!d.open && !d.lines.length) await wide();
