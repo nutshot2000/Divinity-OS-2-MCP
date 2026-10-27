@@ -11,7 +11,7 @@ through this bridge, and how to work on the bridge itself. Read the rules first:
 - Only what is in sight counts. Things behind walls, under fog of war or hidden by perception are not yours to know.
   The tools filter for this; never work around them. What the game's own HUD draws counts as seen: the minimap marks
   people nearby even behind walls, so `dos2_minimap` may list them.
-- No teleporting, spawning items, editing stats or reading story flags. `dos2_lua` is for debugging the bridge, is
+- No teleporting by script (the Teleportation skill, cast through `dos2_cast`, is fine), spawning items, editing stats or reading story flags. `dos2_lua` is for debugging the bridge, is
   off unless `DOS2_DEV=1`, and is never used for play.
 - If a tool shows something a player could not see, say so, ignore it, and report it as a bridge bug.
 
@@ -67,7 +67,7 @@ character's head), keep the pace up, and prefer the text tools over screenshots.
 | `dos2_combat` | Turn order, whose turn, your AP, every visible combatant's HP/armour/statuses, recent events |
 | `dos2_skills` | Your skills: AP, cooldown, range, area, damage type, tooltip |
 | `dos2_attack` | Basic attack on a target GUID |
-| `dos2_cast` | Use a memorised skill on a target GUID or on the ground at x,z |
+| `dos2_cast` | Use a memorised skill on a target GUID or on the ground at x,z; Teleportation takes both (what to move, where it lands) |
 | `dos2_end_turn` | End your turn and wait through the enemies' turns |
 | `dos2_wait_turn` | Wait until it is your turn |
 | `dos2_preview` | Who a skill or item (grenade, scroll) would hit at a target or spot, allies included, and if it is in range |

@@ -153,6 +153,10 @@ At the start of **each** of your turns:
    - `dos2_move x=.. z=..` – reposition (costs AP).
    - `dos2_attack target=<GUID>` – weapon hit (about 2 AP).
    - `dos2_cast skill=<id> target=<GUID>` or `x=.. z=..` – use a skill.
+   - Teleportation (e.g. Gloves of Teleportation) gives `target` = who or what to move AND `x,z` = where it lands, both
+     within 13 m. It never moves the caster, so to cross to ground no path reaches: one member casts it on the others,
+     then hands the gloves to someone already across (`dos2_give`) to bring the last one over. In a fight it drops an
+     enemy off a ledge, into a surface or away from a friend.
    - `dos2_use_on item=<GUID> target=<GUID>` – throw a grenade or read a scroll.
    - Before area skills or grenades: `dos2_preview skill=<id>` (or `item=<GUID>`) with the same target – it lists who
      would be hit, **including your allies**.

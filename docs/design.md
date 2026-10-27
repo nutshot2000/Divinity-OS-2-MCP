@@ -248,3 +248,14 @@ Third tidy-up crash: after `tidy_ui` switched to the engine's `ui:Hide()` for th
 game crashed (access violation in a memcpy in the character sheet's own code, VCRUNTIME140+0x1e250 from EoCApp+0x10343eb,
 the same trace as forcing the sheet open) when a panel the player had opened was hidden. Those three panels are hidden with
 `ExternalInterfaceCall("hideUI")` again; others with `closeUI`; `Hide()` and guessed close names are not used.
+
+## Teleportation skills (2026-10-27)
+
+The Teleportation skill (SkillType `Teleportation`, e.g. `Teleportation_FreeFall` from Gloves of Teleportation) takes two
+clicks in the game: the character or item to move, then the landing spot. It cannot move its caster. Osiris aims a
+skill at one thing only: `CharacterUseSkillAtPosition` alone starts the cast, spends the cooldown and moves nothing.
+The server skill state `esv::SkillStateTeleportation` (from `CharacterSkillManager.CurrentSkillState`, readable one tick
+after the cast) has `SourceHandle`/`SourcePosition` (what moves) and `TargetPosition` (where). Setting all three while
+the state is `Preparing` makes the real skill do the move. Setting only the source sent Beast to 0,0 (the landing
+position was empty), so `Combat.lua` always sets them together and sets `RequestExit` if that fails. Entity objects
+must be fetched again each tick (held ones expire). A party member landing took no damage.

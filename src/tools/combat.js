@@ -22,7 +22,7 @@ function show(s) {
   const lastTurn = s.log.map((e) => e.event).lastIndexOf("turn");
   const extra = deaths > 6 ? `(${deaths - 6} more died; many at once usually means a new area loaded)\n` : "";
   const log = extra + s.log.filter((e, i) => e.event !== "turn" || i === lastTurn).map((e) => e.event === "cast" ? `${e.who} cast ${e.skill}` : e.event === "died" ? `${e.who} died`
-    : e.event === "turn" ? `-- ${e.who}'s turn` : e.event).join("\n");
+    : e.event === "turn" ? `-- ${e.who}'s turn` : e.event).filter((l, i, all) => l !== all[i - 1]).join("\n"); // the engine repeats cast events
   if (!s.in_combat) return (log ? `${log}\n\n` : "") + "Not in combat.";
   const fighters = s.fighters.map((f) => `  ${f.order}. ${f.name} [${f.guid}] ${hpText(f)}, ${f.ap} AP, ${f.dist}m at ${f.x},${f.z}` +
     (f.hit_chance != null && f.tags.includes("enemy") ? `, ${f.hit_chance}% to hit` : "") +
@@ -142,14 +142,18 @@ tool("dos2_attack", "Basic weapon attack on a target (walks into range if needed
   });
 
 tool("dos2_cast", "Use a memorised skill (id from dos2_skills) on a target GUID, or on the ground at x,z. The game " +
-  "checks AP, cooldown and range. Waits for it to land, then returns the combat status.",
+  "checks AP, cooldown and range. Waits for it to land, then returns the combat status. Teleportation (type Teleportation, " +
+  "e.g. from Gloves of Teleportation) takes BOTH: target = the character or item to move (within 13 m, never the caster) " +
+  "and x,z = where it lands (within 13 m of it, ground you have seen). Use it to reach places no path leads to: another " +
+  "party member casts it on whoever must cross, then hand the gloves over (dos2_give) for the next one.",
   { skill: z.string(), target: guid.optional(), x: z.number().optional(), z: z.number().optional() },
   async (a) => {
     if (a.target == null && (a.x == null || a.z == null)) throw new Error("Give a target GUID, or x and z");
     if (a.target) focusBetween(a.target, MEDIUM);
     const r = await call("cast", a);
-    caption(`Casting ${r.casting}`);
-    return text(`Casting ${r.casting}\n` + show(await afterAction(r.ap_before, a.skill)));
+    const what = r.moving ? `Teleporting ${r.moving} to ${r.at.x},${r.at.z}` : `Casting ${r.casting}`;
+    caption(what);
+    return text(`${what}\n` + show(await afterAction(r.ap_before, a.skill)));
   });
 
 tool("dos2_end_turn", "End your turn, then wait while the other combatants act (up to ~50 s) and return the combat " +

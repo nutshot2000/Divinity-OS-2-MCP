@@ -165,6 +165,65 @@ function Handlers.attack(args)
   return { attacking = NameOf(target), ap_before = me.Stats.CurrentAP }
 end
 
+-- Teleportation skills (Gloves of Teleportation) take two clicks in the game: the character or item to move, then where it
+-- lands. Osiris can only aim a skill at one thing, so the cast is aimed at the landing spot and the skill's own state is
+-- given the thing to move on the next tick (esv::SkillStateTeleportation: SourceHandle/SourcePosition = what moves,
+-- TargetPosition = where). Learned live 2026-10-27: with TargetPosition left empty the target landed at 0,0, so both are
+-- always set together, and the cast is cancelled if that fails.
+if TeleportTick ~= nil then pcall(function () Ext.Events.Tick:Unsubscribe(TeleportTick) end) end
+TeleportPending = nil
+TeleportTick = Ext.Events.Tick:Subscribe(function ()
+  local p = TeleportPending
+  if p == nil then return end
+  p.ticks = p.ticks + 1
+  if p.ticks > 120 then TeleportPending = nil; return end -- the cast never started (refused by the game)
+  local okS, st = pcall(function () return Ext.Entity.GetCharacter(p.caster).SkillManager.CurrentSkillState end)
+  if not okS or st == nil then return end
+  local ok = pcall(function ()
+    local t = GetChar(p.target) or GetItem(p.target)
+    local tp = t.WorldPos
+    st.SourceHandle = t.Handle
+    st.SourcePosition = { tp[1], tp[2], tp[3] }
+    st.TargetPosition = { p.x, p.y, p.z }
+  end)
+  if not ok then pcall(function () st.RequestExit = true end) end
+  TeleportPending = nil
+end)
+
+local function teleport(me, args, st)
+  if args.target == nil or args.x == nil or args.z == nil then
+    error(args.skill .. " needs target (the character or item to move) and x,z (where it lands)")
+  end
+  local target = GetChar(args.target) or GetItem(args.target)
+  if target == nil then error("No target with GUID " .. tostring(args.target)) end
+  if target.MyGuid == me.MyGuid then error("Teleportation cannot move its caster: another party member has to cast it on you") end
+  if not CanSeeObject(me, target) then error((NameOf(target) or "That") .. " is not in sight") end
+  local reach = (st.TargetRadius or 0) > 0 and st.TargetRadius or 13
+  local area = (st.AreaRadius or 0) > 0 and st.AreaRadius or reach
+  local from = Pos(target)
+  local d = Dist(Pos(me), from)
+  if d > reach then error(string.format("%s is %.1f m away; the skill reaches %d m", NameOf(target) or "That", d, reach)) end
+  local land = { x = args.x, z = args.z }
+  local dl = Dist(from, land)
+  if dl > area then error(string.format("That spot is %.1f m from %s; it can land at most %d m away", dl, NameOf(target) or "it", area)) end
+  if GetChar(args.target) then
+    for _, s in ipairs({ "FORTIFIED", "GROUNDED" }) do
+      if Osiq("HasActiveStatus", target.MyGuid, s) == 1 then error((NameOf(target) or "That") .. " is " .. s:lower() .. " and cannot be teleported") end
+    end
+  end
+  local grid = Ext.Entity.GetAiGrid()
+  local cell = grid and GridCell(grid, args.x, args.z)
+  if cell == nil or HasFlag(cell.AiFlags, "MovementBlock") then error("Nothing can stand at " .. args.x .. "," .. args.z .. ": pick open ground") end
+  -- Only ground the player could click: seen already (or close by), and not fogged.
+  if Shrouded(args.x, args.z) or (Unexplored(args.x, args.z) and Dist(Pos(me), land) > 14) then
+    error("You have not seen the ground at " .. args.x .. "," .. args.z .. " yet")
+  end
+  local y = GridHeight(grid, args.x, args.z) or from.y
+  TeleportPending = { caster = me.MyGuid, target = target.MyGuid, x = args.x, y = y, z = args.z, ticks = 0 }
+  Osi.CharacterUseSkillAtPosition(me.MyGuid, args.skill, args.x, y, args.z, 0, 0)
+  return { casting = args.skill, moving = NameOf(target), at = land, ap_before = me.Stats.CurrentAP }
+end
+
 function Handlers.cast(args)
   local me = ActiveChar()
   needMyTurn(me)
@@ -180,6 +239,8 @@ function Handlers.cast(args)
     local have = Osiq("CharacterGetSourcePoints", me.MyGuid) or 0
     if have < cost then error(args.skill .. " needs " .. cost .. " Source Point" .. (cost > 1 and "s" or "") .. " and you have " .. have) end
   end
+  local okSt, stats = pcall(Ext.Stats.Get, args.skill)
+  if okSt and stats and stats.SkillType == "Teleportation" then return teleport(me, args, stats) end
   if args.target then
     local target = GetChar(args.target) or GetItem(args.target)
     if target == nil then error("No target with GUID " .. tostring(args.target)) end
