@@ -60,6 +60,7 @@ character's head), keep the pace up, and prefer the text tools over screenshots.
 | `dos2_sweep` | Open every container within reach and loot every dead body (animals too), taking what is not owned (skips owned and locked ones); lists notes to read and people to talk to |
 | `dos2_loot` | List an opened container or a dead body you stand next to; `take="all"` or `take=[GUIDs]` to take; owned items are left alone |
 | `dos2_identify` | Identify carried items with an Identifying Glass (the acting character must carry it; it is not used up) |
+| `dos2_trade` | Buy from a trader you stand next to: list their stock and prices, then buy by GUID (prices are the game's item values) |
 | `dos2_give` | Hand an item to another party member (then `dos2_party action=select` them and `dos2_equip` it) |
 | `dos2_equip` | Equip a weapon, shield or armour from your inventory (attribute requirements checked) |
 | `dos2_talk` | Walk up to a character and start a conversation |
@@ -135,7 +136,7 @@ NOT MET"). At 0 AP the game ends your turn by itself; `dos2_end_turn` then just 
 
 The bridge does not yet cover these; use screen control (screenshot + click/keys) sparingly:
 
-- Character creation, trading, the journal, saving (F5), sneaking in combat.
+- Character creation, selling, the journal, saving (F5), sneaking in combat. (Buying goes through `dos2_trade`; never open the game's trade window with the bridge: it crashed the game twice.)
 
 Handled automatically after every tool: tutorial popups (text appended to the result) and panels left open on screen
 (loot windows, inventory, journal, books, pause menu: "[Closed on screen: ...]"). Notes and books: `dos2_use` returns

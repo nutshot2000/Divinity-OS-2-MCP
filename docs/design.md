@@ -292,3 +292,7 @@ recorded fine without it open at the same time as a dialogue. Next try: read the
   seconds, as with the `UICall` recorder. Two crashes with the trade window open and the bridge touching it: leave
   that window alone. Nebora's stock is readable server-side from her inventory, and `ItemGetGoldValue(item)` gives the
   game's value of a stack (not the barter-adjusted price).
+- `dos2_trade` (2026-10-28) buys without the window: stock = the trader's carried, unequipped items; price =
+  `ItemGetGoldValue` per unit (at least 1); the item moves with `ItemToInventory`, gold with `PartyAddGold(me, -price)`
+  and `CharacterAddGold(trader, price)` (Nebora's purse went 428 -> 448 for 20 gold of goods). Needs the trader within
+  6 m, alive, not hostile, not in the party. Selling is not done: the game's sell price is not known.

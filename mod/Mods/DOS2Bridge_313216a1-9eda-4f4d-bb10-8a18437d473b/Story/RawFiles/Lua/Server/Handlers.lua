@@ -468,6 +468,75 @@ function Handlers.carried_todo()
   return out
 end
 
+-- Trading. The game's trade window crashed the game twice when the bridge touched it (docs/design.md), so trades are
+-- done here: the trader's stock is what they carry (not equipped, not gold), the price is the game's own value of the
+-- item (ItemGetGoldValue), and the trade moves the item and the gold, nothing else. The window adjusts prices for Barter
+-- and attitude, which is not readable here; the bridge never pays less than the plain value.
+local TRADE_REACH = 6
+
+local function traderFor(me, guid)
+  local t = GetChar(guid)
+  if t == nil or t.Dead then error("No living trader with GUID " .. tostring(guid)) end
+  if Osiq("CharacterIsPartyMember", t.MyGuid) == 1 then error("That is your own party: use dos2_give") end
+  if Osiq("CharacterIsEnemy", me.MyGuid, t.MyGuid) == 1 then error((NameOf(t) or "They") .. " is hostile") end
+  local d = Dist(Pos(me), Pos(t))
+  if d > TRADE_REACH then error((NameOf(t) or "They") .. " is " .. d .. " m away: walk up first (dos2_talk)") end
+  return t
+end
+
+local function equippedSet(c)
+  local set = {}
+  for _, slot in ipairs({ "Helmet", "Breast", "Leggings", "Weapon", "Shield", "Ring", "Belt", "Boots", "Gloves", "Amulet",
+      "Ring2", "Wings", "Horns", "Overhead" }) do
+    local g = Osiq("CharacterGetEquippedItem", c.MyGuid, slot)
+    if g ~= nil and g ~= "" then set[BareGuid(g)] = true end
+  end
+  return set
+end
+
+local function stockOf(c)
+  local out, eq = {}, equippedSet(c)
+  for _, g in ipairs(c:GetInventoryItems() or {}) do
+    local it = GetItem(g)
+    if it and not eq[BareGuid(it.MyGuid)] and it.StatsId ~= "Gold" and (NameOf(it) or ""):lower() ~= "gold" then
+      local amount = it.Amount or 1
+      local value = Osiq("ItemGetGoldValue", it.MyGuid) or 0
+      out[#out + 1] = { name = NameOf(it) or it.StatsId, guid = it.MyGuid, amount = amount,
+        price_each = math.max(1, math.ceil(value / math.max(1, amount))) }
+    end
+  end
+  table.sort(out, function (a, b) return a.name < b.name end)
+  return out
+end
+
+function Handlers.trade_list(args)
+  local me = ActiveChar()
+  local t = traderFor(me, args.trader)
+  return { trader = NameOf(t), stock = stockOf(t), party_gold = Osiq("PartyGetGold", me.MyGuid) or 0 }
+end
+
+function Handlers.trade_buy(args)
+  local me = ActiveChar()
+  local t = traderFor(me, args.trader)
+  local item = GetItem(args.item)
+  if item == nil then error("No item with GUID " .. tostring(args.item)) end
+  local owner = Osiq("GetInventoryOwner", item.MyGuid)
+  if owner == nil or BareGuid(owner) ~= BareGuid(t.MyGuid) then error((NameOf(item) or "That") .. " is not in " .. (NameOf(t) or "their") .. "'s stock") end
+  if equippedSet(t)[BareGuid(item.MyGuid)] then error((NameOf(t) or "They") .. " is wearing that: not for sale") end
+  local name = NameOf(item) or ""
+  if name:find("^Unidentified %[") then error("That item's name never resolved; moving it crashed the game before") end
+  local have = item.Amount or 1
+  local amount = math.min(args.amount or have, have)
+  local each = math.max(1, math.ceil((Osiq("ItemGetGoldValue", item.MyGuid) or 0) / math.max(1, have)))
+  local price = each * amount
+  local gold = Osiq("PartyGetGold", me.MyGuid) or 0
+  if gold < price then error(string.format("%s costs %d gold and the party has %d", name, price, gold)) end
+  Osi.ItemToInventory(item.MyGuid, me.MyGuid, amount, 0, 0)
+  Osi.PartyAddGold(me.MyGuid, -price)
+  pcall(function () Osi.CharacterAddGold(t.MyGuid, price) end)
+  return { bought = name, amount = amount, price = price, gold_left = Osiq("PartyGetGold", me.MyGuid) or 0, trader = NameOf(t) }
+end
+
 --- Equip an item from the active character's inventory. CharacterEquipItem itself does not enforce attribute
 --- requirements, so they are checked here first, as the inventory UI would.
 function Handlers.equip(args)

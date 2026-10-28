@@ -49,6 +49,23 @@ tool("dos2_identify", "Identify carried items with an Identifying Glass (it must
     return text(`${r.glass}: identified\n${r.identified.map((i) => `  ${i.name} [${i.guid}] (${i.holder})`).join("\n") || "  nothing (all already identified)"}` + hint);
   });
 
+tool("dos2_trade", "Buy from a trader you are standing next to (talk to them first). Without item: lists their stock " +
+  "with prices and the party's gold. With item (GUID from that list) and optional amount: buys it. Prices are the " +
+  "game's item values; the in-game trade window can differ a little (Barter, attitude). Do not open the game's trade " +
+  "window with the bridge: it crashed the game.",
+  { trader: guid, item: guid.optional(), amount: z.number().int().min(1).optional() },
+  async (a) => {
+    if (await inCombat()) return text("Not trading: you are in combat.");
+    if (!a.item) {
+      const r = await call("trade_list", { trader: a.trader });
+      return text(`${r.trader} sells (party gold ${r.party_gold}):\n` +
+        (r.stock.map((i) => `  ${i.name}${i.amount > 1 ? ` x${i.amount}` : ""} [${i.guid}] ${i.price_each} gold each`).join("\n") || "  nothing"));
+    }
+    const r = await call("trade_buy", a);
+    await caption(`Bought ${r.bought}${r.amount > 1 ? ` x${r.amount}` : ""} for ${r.price} gold`);
+    return text(`Bought ${r.bought}${r.amount > 1 ? ` x${r.amount}` : ""} from ${r.trader} for ${r.price} gold (${r.gold_left} left).`);
+  });
+
 tool("dos2_inventory", "Your character's inventory as the inventory screen shows it: name, amount, what is equipped, " +
   "and for gear its slot, rarity and (once identified) armour or damage, plus descriptions. Use dos2_use on an item's GUID to " +
   "drink, eat or read it, dos2_equip to wear it. equipment=true lists only weapons, armour and jewellery.",
