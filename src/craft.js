@@ -11,8 +11,17 @@ export const client = (cmd, args = {}) => call(cmd, args, 15000, "client");
 export async function readRecipe(id) {
   const mark = (await client("ping")).log;
   await client("ui_call", { ui: CRAFT_UI, fn: "selectRecipe", args: [id] });
-  await new Promise((res) => setTimeout(res, 150));
-  const es = (await client("ui_log", { ui: CRAFT_UI, since: mark, limit: 60 })).entries.filter((e) => e.when !== "After");
+  // The screen answers with the name, the craftable amount and setStation; only while it is on screen does it also send
+  // the five ingredient slots (0-4). Wait for whichever comes last, not a fixed time.
+  let es = [];
+  for (let i = 0; i < 10; i++) {
+    await new Promise((res) => setTimeout(res, 100));
+    es = (await client("ui_log", { ui: CRAFT_UI, since: mark, limit: 60 })).entries.filter((e) => e.when !== "After");
+    const station = es.some((e) => e.fn === "setStation");
+    const slots = es.some((e) => e.fn === "setIngredient");
+    if (station && (!slots || es.some((e) => e.fn === "setIngredient" && e.args[0] === 4))) break;
+    if (i >= 2 && !es.some((e) => e.fn === "setRecipeResult")) break; // no such recipe
+  }
   const name = es.find((e) => e.fn === "setRecipeResult");
   if (!name) return null;
   const max = es.find((e) => e.fn === "setRecipeMaxCraftAmount");

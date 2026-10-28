@@ -76,22 +76,21 @@ tool("dos2_craft", "Craft through the game's crafting screen, as its buttons do.
   { recipe: z.number().int().min(0).max(80).optional(), amount: z.number().int().min(1).max(20).optional() },
   async (a) => {
     if (await inCombat()) return text("Not crafting: you are in combat.");
-    try { await client("ui_call", { ui: CRAFT_UI, fn: "selectRecipe", args: [0] }); }
-    catch { return text("The crafting screen is not available: press K in the game once (it stays usable after closing)."); }
+    const noScreen = "The crafting screen is not available: press K in the game once (it stays usable after closing).";
     if (a.recipe == null) {
-      const out = [];
-      for (let id = 0, misses = 0; id <= 80 && misses < 5; id++) {
-        const r = await readRecipe(id);
-        if (!r) { misses++; continue; }
-        misses = 0;
-        out.push(`  ${r.id}. ${r.name}: ${r.ingredients.join(" + ")}${r.max > 0 ? ` -> can make ${r.max}` : ""}`);
-      }
+      const all = await listRecipes();
+      if (all == null) return text(noScreen);
+      const out = all.map((r) => `  ${r.id}. ${r.name}` + (r.ingredients.length ? `: ${r.ingredients.join(" + ")}` : "") +
+        (r.max > 0 ? ` -> can make ${r.max}` : " (cannot make yet)"));
+      if (all.length && !all.some((r) => r.ingredients.length)) out.push("  (Ingredients show only while the crafting window is open: press K to see them.)");
       return text(`Known recipes (dos2_craft recipe=<number>):\n${out.join("\n") || "  none"}`);
     }
-    const r = await readRecipe(a.recipe);
+    let r;
+    try { r = await readRecipe(a.recipe); } catch { return text(noScreen); }
     if (!r) return text(`No recipe number ${a.recipe}: call dos2_craft without recipe for the list.`);
     const amount = a.amount ?? 1;
-    if (r.max < amount) return text(`Cannot make ${amount} ${r.name}: the screen says ${r.max} (needs ${r.ingredients.join(" + ")}).`);
+    if (r.max < amount) return text(`Cannot make ${amount} ${r.name}: the screen says ${r.max}` +
+      (r.ingredients.length ? ` (needs ${r.ingredients.join(" + ")}).` : "."));
     await caption(`Crafting ${r.name}${amount > 1 ? ` x${amount}` : ""}`);
     await client("ui_call", { ui: CRAFT_UI, fn: "craftRecipe", args: [a.recipe, amount] });
     await new Promise((res) => setTimeout(res, 1500));
