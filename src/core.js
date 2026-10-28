@@ -4,6 +4,7 @@ import fs from "node:fs";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { call } from "./bridge.js";
+import { recentre } from "./director.js";
 export { z, call };
 
 // The playbook: sent as the server's instructions, returned by dos2_help.
@@ -70,6 +71,9 @@ async function afterTool(name) {
     const s = await call("post", {}, 5000);
     note += progressNote(s.party);
     if (s.in_combat && !SHOWS_COMBAT.has(name)) note += COMBAT_BANNER;
+    // Out of combat, put the camera back on the acting character: close-ups and walks by anyone the player has not
+    // selected otherwise leave it parked (the game only re-centres when the selected character moves).
+    if (!s.in_combat) await recentre();
     // Party members in trouble: always said, after every tool, until it is dealt with.
     const nl = String.fromCharCode(10);
     const alerts = (s.alerts ?? []).map((a) => a.what === "dead"

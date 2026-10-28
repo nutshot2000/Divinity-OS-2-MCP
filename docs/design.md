@@ -336,3 +336,8 @@ recorded fine without it open at the same time as a dialogue. Next try: read the
   a reload (the game selected Beast) the camera followed Beast while the bridge walked Sebille. The portraits screen
   (playerInfo.swf, UI 38) receives `selectPlayer(handle)`; calling its `charSel` with `Ext.UI.HandleToDouble(handle)`
   did nothing. Open: how to change the game's selection from script. Until then the player clicks the portrait.
+- Camera fix: `ecl::GameCamera.CharacterHandle` (who it follows) is read-only. The game re-centres only when the
+  selected character moves, so walks by anyone else and the bridge's close-ups left the camera parked ("not following
+  anyone"). Now walks push TargetLookAt to the walker every poll, and every tool out of combat ends with the camera back
+  on the acting character. When the acting character is not the one the player selected, the game still pulls the
+  camera to the selected one whenever that one moves.

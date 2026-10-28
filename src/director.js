@@ -32,6 +32,19 @@ export async function focusBetween(target, zoom = MEDIUM) {
   } catch { /* cosmetic */ }
 }
 
+/** Keep the camera on the walker at the current zoom. The game camera only re-centres when the character the player has
+ *  selected moves, so walking anyone else (or the bridge pointing it at a container) leaves it parked. Fire and forget. */
+export function follow(x, y, z) {
+  if (!ENABLED || x == null) return;
+  call("camera", { x, y, z }, 5000, "client").catch(() => {});
+}
+
+/** Back on the acting character at the current zoom (after a close-up or a walk), so the camera is never left parked. */
+export async function recentre() {
+  if (!ENABLED) return;
+  try { await call("camera", await call("camera_point", {}, 5000), 5000, "client"); } catch { /* cosmetic */ }
+}
+
 /** Back to the normal exploring view, centred on the acting character. */
 export async function wide() {
   if (!ENABLED) return;

@@ -1,6 +1,6 @@
 // Tools: movement and interaction.
 import { tool, call, text, json, z, guid, inCombat } from "../core.js";
-import { focus, wide, CLOSE, caption } from "../director.js";
+import { focus, wide, follow, CLOSE, caption } from "../director.js";
 import { markUsed } from "../done.js";
 import { craftableNow } from "../craft.js";
 
@@ -32,6 +32,7 @@ async function waitForMove(event, timeoutMs, startHp, startedInCombat = false, s
   while (Date.now() < deadline) {
     await sleep(400);
     const s = await poll("move_status", { event });
+    follow(s.x, undefined, s.z); // the camera stays on whoever walks
     // Stop for fresh harm (a new status such as BURNING, or a real hit), not for poison or bleeding that was already
     // ticking before the move started.
     const newStatus = s.statuses.some((st) => !startStatuses.includes(st) && /BURNING|POISONED|BLEEDING|ACID|ELECTRIFIED|SHOCKED|FROZEN|NECROFIRE|SUFFOCATING|HIT/.test(st));
