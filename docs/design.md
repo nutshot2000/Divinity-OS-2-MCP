@@ -300,3 +300,9 @@ recorded fine without it open at the same time as a dialogue. Next try: read the
   opened it until a restart. It also closed the trade window under a running trade, the likely real cause of the two
   trade crashes. tidy_ui now closes only what the bridge's own actions leave open (loot window, book, pause menu, and
   the inventory or sheet it showed); the player's crafting, trade, journal, skills, examine and waypoint windows stay.
+- Crafting (2026-10-28): recorded from a hand-made Knife On A Stick. The crafting screen (UI 102) answers
+  `selectRecipe(n)` with `setRecipeResult(name)`, `setRecipeMaxCraftAmount(n)` and `setIngredient(slot, ?, name, have, ...)`;
+  numbers with no recipe answer nothing, so probing is safe. Combine sends `craftRecipe(n, amount)`. `dos2_craft` uses
+  `ui_call` for both and reads the invoke log. It crafts for the character the screen shows (`nextCharacter()` switches).
+  The game's recipe table (`ItemCombos.txt` in the paks) matches ingredients by stats id or `ComboCategory`: a
+  Magister's dagger (`_FTJ_Magister_Melee_Dagger`) has no category and does not count as "Any Dagger"; `WPN_Dagger` does.

@@ -61,6 +61,7 @@ character's head), keep the pace up, and prefer the text tools over screenshots.
 | `dos2_loot` | List an opened container or a dead body you stand next to; `take="all"` or `take=[GUIDs]` to take; owned items are left alone |
 | `dos2_identify` | Identify carried items with an Identifying Glass (the acting character must carry it; it is not used up) |
 | `dos2_trade` | Buy from a trader you stand next to: list their stock and prices, then buy by GUID (prices are the game's item values) |
+| `dos2_craft` | List known recipes with ingredient counts and how many can be made, then craft one by number (uses the game's crafting screen; open it once with K) |
 | `dos2_give` | Hand an item to another party member (then `dos2_party action=select` them and `dos2_equip` it) |
 | `dos2_equip` | Equip a weapon, shield or armour from your inventory (attribute requirements checked) |
 | `dos2_talk` | Walk up to a character and start a conversation |
