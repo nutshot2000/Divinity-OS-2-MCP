@@ -82,13 +82,15 @@ tool("dos2_craft", "Craft through the game's crafting screen, as its buttons do.
       if (all == null) return text(noScreen);
       const out = all.map((r) => `  ${r.id}. ${r.name}` + (r.ingredients.length ? `: ${r.ingredients.join(" + ")}` : "") +
         (r.max > 0 ? ` -> can make ${r.max}` : " (cannot make yet)"));
-      if (all.length && !all.some((r) => r.ingredients.length)) out.push("  (Ingredients show only while the crafting window is open: press K to see them.)");
+      if (all.length && !all.some((r) => r.ingredients.length)) out.push("  (The crafting window is closed, so these counts may be out of date and nothing can be crafted: press K in the game, then list again.)");
       return text(`Known recipes (dos2_craft recipe=<number>):\n${out.join("\n") || "  none"}`);
     }
     let r;
     try { r = await readRecipe(a.recipe); } catch { return text(noScreen); }
     if (!r) return text(`No recipe number ${a.recipe}: call dos2_craft without recipe for the list.`);
     const amount = a.amount ?? 1;
+    if (!r.ingredients.length) return text("Open the crafting window in the game first (K): the game only recounts " +
+      "ingredients and crafts while it is on screen. Then call dos2_craft again.");
     if (r.max < amount) return text(`Cannot make ${amount} ${r.name}: the screen says ${r.max}` +
       (r.ingredients.length ? ` (needs ${r.ingredients.join(" + ")}).` : "."));
     await caption(`Crafting ${r.name}${amount > 1 ? ` x${amount}` : ""}`);

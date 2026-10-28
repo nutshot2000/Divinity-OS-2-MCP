@@ -309,3 +309,10 @@ recorded fine without it open at the same time as a dialogue. Next try: read the
 - New-recipe notices (2026-10-28): `dos2_use` on a book whose use action is `Recipe` adds "new recipe learned" and the
   recipes now makeable; `dos2_loot` (when it took something), `dos2_sweep` and `dos2_trade` add "[Can craft now: ...]"
   when a known recipe's count is above 0 (`src/craft.js`, about 5 s: one `selectRecipe` per recipe number).
+- The crafting screen only recounts and crafts while it is on screen. Closed (hidden) it still answers selectRecipe
+  with the name and the craftable amount from when it was last open, sends no ingredients, and `craftRecipe` does
+  nothing (Shell + Long Branch in the pack, Improvised Staff not made). So `dos2_craft` and the "can craft now" notes
+  only work with the window open (K). Doing it without the screen would mean consuming ingredients and creating the
+  result from the recipe table (`ItemCombos.txt`, result stats -> `RootTemplate`).
+- Trader stock: a trader's goods are created when their trade window first opens (Doctor Leste carried nothing).
+  `trade_list` calls `GenerateItems(player, trader)` once per trader per session, which filled her stock.

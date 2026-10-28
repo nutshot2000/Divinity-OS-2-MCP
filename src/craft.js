@@ -45,8 +45,14 @@ export async function listRecipes() {
 
 /** A short note naming the recipes that can be made right now ("" if none; null if the screen is not available). */
 export async function craftableNow() {
+  // One recipe first: a closed window answers without ingredients, so stop before reading the rest (about 8 s).
+  try {
+    const first = await readRecipe(0);
+    if (!first || !first.ingredients.length) return null;
+  } catch { return null; }
   const all = await listRecipes();
-  if (all == null) return null;
+  // With the window closed the screen sends no ingredients and keeps old counts: nothing reliable to say.
+  if (all == null || !all.some((r) => r.ingredients.length)) return null;
   const can = all.filter((r) => r.max > 0);
   return can.length ? `\n[Can craft now: ${can.map((r) => `${r.name} x${r.max} (dos2_craft recipe=${r.id})`).join(", ")}]` : "";
 }

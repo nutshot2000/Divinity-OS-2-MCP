@@ -520,9 +520,17 @@ local function stockOf(c)
   return out
 end
 
+-- A trader's goods are created when their trade window first opens; without it Doctor Leste carried nothing.
+-- GenerateItems(player, trader) is that step. Once per trader per session, so stock is not stacked up.
+TradeGenerated = TradeGenerated or {}
+
 function Handlers.trade_list(args)
   local me = ActiveChar()
   local t = traderFor(me, args.trader)
+  if not TradeGenerated[BareGuid(t.MyGuid)] then
+    pcall(function () Osi.GenerateItems(me.MyGuid, t.MyGuid) end)
+    TradeGenerated[BareGuid(t.MyGuid)] = true
+  end
   return { trader = NameOf(t), stock = stockOf(t), party_gold = Osiq("PartyGetGold", me.MyGuid) or 0 }
 end
 
