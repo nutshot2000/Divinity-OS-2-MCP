@@ -260,7 +260,40 @@ end
 
 --- Everything the bridge asks after each tool call, in one round trip: is the acting character in combat, and the party's
 --- XP and unspent points (see Handlers.progress).
+-- Ground that hurts whoever stands in it (AI grid flags; the same names dos2_grid draws).
+local HURTS = { "Fire", "Poison", "Lava", "Deathfog", "Electrified", "FireCloud", "PoisonCloud" }
+
+--- Party members in trouble, for the line after every tool: dead, standing in fire or poison, or low on health.
+--- Beast died once standing in poison after a fight while looting went on (2026-10-28): nothing had said so.
+function Handlers.party_alerts()
+  local out = {}
+  local grid = Ext.Entity.GetAiGrid()
+  for _, g in ipairs(PartyGuids()) do
+    local c = GetChar(g)
+    if c then
+      local name = NameOf(c) or "someone"
+      if c.Dead then
+        out[#out + 1] = { who = name, guid = c.MyGuid, what = "dead" }
+      else
+        local p = Pos(c)
+        local cell = grid and GridCell(grid, p.x, p.z)
+        local surface
+        if cell then for _, h in ipairs(HURTS) do if HasFlag(cell.AiFlags, h) then surface = h; break end end end
+        local hp, max = c.Stats.CurrentVitality, math.max(1, c.Stats.MaxVitality)
+        if surface then out[#out + 1] = { who = name, guid = c.MyGuid, what = "in " .. surface:lower(), hp = hp, max = max, x = p.x, z = p.z } end
+        for _, st in ipairs(c:GetStatuses() or {}) do
+          local s = tostring(st)
+          if s == "POISONED" or s == "BURNING" or s == "BLEEDING" then out[#out + 1] = { who = name, guid = c.MyGuid, what = s:lower(), hp = hp, max = max } end
+        end
+        if hp / max < 0.35 then out[#out + 1] = { who = name, guid = c.MyGuid, what = "low health", hp = hp, max = max } end
+      end
+    end
+  end
+  return out
+end
+
 function Handlers.post()
   local me = ActiveChar()
-  return { in_combat = Osiq("CharacterIsInCombat", me.MyGuid) == 1, party = Handlers.progress() }
+  local okA, alerts = pcall(Handlers.party_alerts)
+  return { in_combat = Osiq("CharacterIsInCombat", me.MyGuid) == 1, party = Handlers.progress(), alerts = okA and alerts or {} }
 end

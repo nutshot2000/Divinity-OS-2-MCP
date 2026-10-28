@@ -70,6 +70,14 @@ async function afterTool(name) {
     const s = await call("post", {}, 5000);
     note += progressNote(s.party);
     if (s.in_combat && !SHOWS_COMBAT.has(name)) note += COMBAT_BANNER;
+    // Party members in trouble: always said, after every tool, until it is dealt with.
+    const nl = String.fromCharCode(10);
+    const alerts = (s.alerts ?? []).map((a) => a.what === "dead"
+      ? `${a.who} is DEAD: use a Resurrection Scroll on the body (dos2_use_on item=<scroll> target=${a.guid} x=.. z=.., a clean spot to stand up on)`
+      : a.what.startsWith("in ")
+        ? `${a.who} is standing ${a.what} (${a.hp}/${a.max} HP): move them out now (dos2_party action=select, dos2_move)`
+        : `${a.who}: ${a.what} (${a.hp}/${a.max} HP)` + (a.what === "low health" ? ": heal (potion or Restoration)" : ""));
+    if (alerts.length) note += `${nl}${nl}[!! PARTY: ${alerts.join("; ")}]`;
   } catch { /* game loading */ }
   return note;
 }

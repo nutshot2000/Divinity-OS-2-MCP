@@ -210,8 +210,15 @@ tool("dos2_use_on", "Throw or read an item from your inventory at a target GUID 
     const r = await call("use_item", a);
     caption(`Using ${r.using}`);
     const s = await afterAction(r.ap_before);
-    const cast = s.log.some((e) => e.event === "cast" && e.skill === r.skill) ||
+    let cast = s.log.some((e) => e.event === "cast" && e.skill === r.skill) ||
       (await call("combat", { since: before.log_last })).log.some((e) => e.event === "cast" && e.skill === r.skill);
+    // Teleport-type scrolls (Resurrection: pick the body, then where it stands up) take a few seconds and may log no
+    // cast out of combat; the scroll went unconsumed once (2026-10-28). Count it as used once the target is at the spot.
+    for (let i = 0; !cast && r.moving && i < 12; i++) {
+      await sleep(500);
+      const p = await call("object_pos", { guid: a.target }).catch(() => null);
+      if (p && Math.hypot(p.x - r.at.x, p.z - r.at.z) < 1.5) cast = true;
+    }
     if (!cast) return text(`The game did not use ${r.using} (nothing spent): out of range, no line of sight or not enough AP?\n` + show(s));
     await call("consume_item", { template: r.template });
     return text(`Used ${r.using} (${r.skill}).\n` + show(s));

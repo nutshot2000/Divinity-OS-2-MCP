@@ -323,3 +323,11 @@ recorded fine without it open at the same time as a dialogue. Next try: read the
 - "Can craft now" notes count ingredients server-side (`craft_counts`) from data/recipes.json (built per machine by
   `scripts/build-recipes.mjs` from the paks; it is game data, so not committed), limited to recipe names the crafting
   window last listed for the character. Recipes needing a crafting station are left out.
+- Resurrection Scroll (2026-10-28): its skill `Teleportation_ResurrectScroll` is a teleport-type skill (6 AP, 13 m,
+  ground only): the body is the thing moved, x,z is where it stands up. `use_item` now routes teleport-type item skills
+  through the same skill-state path as the gloves (with ignoreHasSkill), and `dos2_use_on` counts it as used once the
+  target is at the spot (no cast event was logged out of combat, so the first scroll went unconsumed and was removed by
+  hand).
+- Party alerts: Beast died in poison after a fight while the bridge looted and changed gear, and no tool said so.
+  `post` now returns `party_alerts` (dead; standing in fire, poison, lava, deathfog or electrified ground; poisoned,
+  burning or bleeding; under 35% health) and every tool result ends with "[!! PARTY: ...]" until it is dealt with.

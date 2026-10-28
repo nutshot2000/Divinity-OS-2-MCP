@@ -190,9 +190,9 @@ TeleportTick = Ext.Events.Tick:Subscribe(function ()
   TeleportPending = nil
 end)
 
-local function teleport(me, args, st)
+local function teleport(me, args, st, fromItem)
   if args.target == nil or args.x == nil or args.z == nil then
-    error(args.skill .. " needs target (the character or item to move) and x,z (where it lands)")
+    error(args.skill .. " needs target (the character, item or body to move) and x,z (where it lands)")
   end
   local target = GetChar(args.target) or GetItem(args.target)
   if target == nil then error("No target with GUID " .. tostring(args.target)) end
@@ -220,7 +220,8 @@ local function teleport(me, args, st)
   end
   local y = GridHeight(grid, args.x, args.z) or from.y
   TeleportPending = { caster = me.MyGuid, target = target.MyGuid, x = args.x, y = y, z = args.z, ticks = 0 }
-  Osi.CharacterUseSkillAtPosition(me.MyGuid, args.skill, args.x, y, args.z, 0, 0)
+  -- A scroll (Resurrection is a teleport-type skill: pick the body, then where it stands up) grants its skill: ignoreHasSkill.
+  Osi.CharacterUseSkillAtPosition(me.MyGuid, args.skill, args.x, y, args.z, 0, fromItem and 1 or 0)
   return { casting = args.skill, moving = NameOf(target), at = land, ap_before = me.Stats.CurrentAP }
 end
 
@@ -341,6 +342,12 @@ function Handlers.use_item(args)
   if owner == nil or BareGuid(owner) ~= BareGuid(me.MyGuid) then error((NameOf(item) or "That") .. " is not in your inventory") end
   local skillId = itemSkill(item)
   if skillId == nil then error((NameOf(item) or "That") .. " cannot be thrown or cast: use dos2_use to drink, eat or read it") end
+  local okSt, ist = pcall(Ext.Stats.Get, skillId)
+  if okSt and ist and ist.SkillType == "Teleportation" then
+    local r = teleport(me, { skill = skillId, target = args.target, x = args.x, z = args.z }, ist, true)
+    r.using, r.skill, r.template = NameOf(item), skillId, Osiq("GetTemplate", item.MyGuid)
+    return r
+  end
   local x, z, t = aimPoint(me, args)
   if t then
     -- CharacterUseSkill(character, skill, target, forceResetCooldown, ignoreHasSkill, ignoreChecks): the item grants the skill
