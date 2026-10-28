@@ -118,7 +118,10 @@ function Combos(me, enemies, allies, skills, grid, oilUnderFriend)
           for dz = -12, 12 do
             local x, z = e.x + dx, e.z + dz
             local d2 = dx * dx + dz * dz
-            if d2 <= 144 and (best == nil or d2 < best.d2) then
+            -- Never a spot next to one of us: it once offered the poison Sebille herself stood in (2026-10-28).
+            local nearFriend = (me.x - x) ^ 2 + (me.z - z) ^ 2 < 9
+            for _, a in ipairs(allies) do if (a.x - x) ^ 2 + (a.z - z) ^ 2 < 9 then nearFriend = true end end
+            if d2 <= 144 and not nearFriend and (best == nil or d2 < best.d2) then
               local h = surfaceAt(grid, x, z, SURFACE_HAZ)
               if h and not surfaceAt(grid, x, z, { "MovementBlock" }) then best = { d2 = d2, x = x, z = z, h = h } end
             end
