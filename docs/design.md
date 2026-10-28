@@ -287,3 +287,8 @@ subscriber (filtered to `trade.swf` and `uiCraft.swf`, reading `e.UI.Path` on ev
 whole game (the process was gone). Do not subscribe to UICall for the trade screen; the crafting screen's calls were
 recorded fine without it open at the same time as a dialogue. Next try: read the screen's own arrays (`addItem`,
 `setGoldValues`) from the invoke log and press its buttons by name from a one-shot call, with a quicksave first.
+- Second crash (2026-10-28): the dialogue screen's `TradeButtonPressed` reopened the trade window (UI 46) while a
+  `UIInvoke` subscriber read `root.item_array` / `root.gold_array` on its `updateItems` (Before). The game died within
+  seconds, as with the `UICall` recorder. Two crashes with the trade window open and the bridge touching it: leave
+  that window alone. Nebora's stock is readable server-side from her inventory, and `ItemGetGoldValue(item)` gives the
+  game's value of a stack (not the barter-adjusted price).
