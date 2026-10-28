@@ -128,10 +128,12 @@ end
 --- The open message box, if any: the raw invokes that built it (text and buttons), for the server tool to parse.
 -- Panels that can be left open on screen (opening a container shows its loot window, a stray key opens the journal,
 -- ...). Dialogue and message boxes are not here: those need an answer, not closing. Close-call names from each SWF.
+-- Only panels the bridge's own actions leave open. The player's own windows (crafting, trade, journal, skills,
+-- examine, waypoints) are never touched: closeUI destroyed the crafting screen so K no longer opened it, and closing the
+-- trade window under the game is the likely cause of two crashes (2026-10-28).
 local PANELS = {
   ["containerInventory.swf"] = "loot window", ["partyInventory.swf"] = "inventory", ["characterSheet.swf"] = "character sheet",
-  ["journal.swf"] = "journal", ["examine.swf"] = "examine window", ["uiCraft.swf"] = "crafting", ["skills.swf"] = "skills",
-  ["trade.swf"] = "trade", ["book.swf"] = "book", ["waypoints.swf"] = "waypoints", ["gameMenu.swf"] = "pause menu",
+  ["book.swf"] = "book", ["gameMenu.swf"] = "pause menu",
 }
 -- Proper close calls first: hideUI only hides a panel, and the game may then think it is still open (a hidden book
 -- screen blocked every later read). hideUI is the last resort.

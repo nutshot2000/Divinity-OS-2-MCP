@@ -296,3 +296,7 @@ recorded fine without it open at the same time as a dialogue. Next try: read the
   `ItemGetGoldValue` per unit (at least 1); the item moves with `ItemToInventory`, gold with `PartyAddGold(me, -price)`
   and `CharacterAddGold(trader, price)` (Nebora's purse went 428 -> 448 for 20 gold of goods). Needs the trader within
   6 m, alive, not hostile, not in the party. Selling is not done: the game's sell price is not known.
+- tidy_ui closed the crafting window with closeUI, which destroyed it: the screen was gone from Ext.UI and K no longer
+  opened it until a restart. It also closed the trade window under a running trade, the likely real cause of the two
+  trade crashes. tidy_ui now closes only what the bridge's own actions leave open (loot window, book, pause menu, and
+  the inventory or sheet it showed); the player's crafting, trade, journal, skills, examine and waypoint windows stay.
