@@ -306,3 +306,6 @@ recorded fine without it open at the same time as a dialogue. Next try: read the
   `ui_call` for both and reads the invoke log. It crafts for the character the screen shows (`nextCharacter()` switches).
   The game's recipe table (`ItemCombos.txt` in the paks) matches ingredients by stats id or `ComboCategory`: a
   Magister's dagger (`_FTJ_Magister_Melee_Dagger`) has no category and does not count as "Any Dagger"; `WPN_Dagger` does.
+- New-recipe notices (2026-10-28): `dos2_use` on a book whose use action is `Recipe` adds "new recipe learned" and the
+  recipes now makeable; `dos2_loot` (when it took something), `dos2_sweep` and `dos2_trade` add "[Can craft now: ...]"
+  when a known recipe's count is above 0 (`src/craft.js`, about 5 s: one `selectRecipe` per recipe number).

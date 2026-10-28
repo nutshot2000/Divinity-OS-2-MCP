@@ -4,6 +4,7 @@ import { tool, call, text, z, inCombat } from "../core.js";
 import { useItem, walkTo } from "./move.js";
 import { markUsed } from "../done.js";
 import { isUsed, isTalked } from "../done.js";
+import { craftableNow } from "../craft.js";
 
 // Things a player reads rather than opens: found by name, since the game gives no tag for them.
 const READABLE = /\b(note|letter|book|tome|journal|diary|page|scroll|rhyme|requisition|map|sign|plaque|inscription)\b/i;
@@ -67,5 +68,6 @@ tool("dos2_sweep", "Open every container within reach and loot every dead body, 
     if (left.reads.length) rest.push(`to read (dos2_use): ${left.reads.map((o) => `${o.name} [${o.guid}]`).join(", ")}`);
     if (left.carried.length) rest.push(`carried, not dealt with yet:\n${left.carried.join("\n")}`);
     if (left.people.length) rest.push(`people to talk to (dos2_talk): ${left.people.map((c) => `${c.name} [${c.guid}]`).join(", ")}`);
-    return text((out.join("\n") || "Nothing to open or loot in reach.") + (rest.length ? `\n\nStill to do here:\n${rest.join("\n")}` : ""));
+    const can = out.some((l) => /took/.test(l)) ? await craftableNow().catch(() => null) : null;
+    return text((out.join("\n") || "Nothing to open or loot in reach.") + (can ?? "") + (rest.length ? `\n\nStill to do here:\n${rest.join("\n")}` : ""));
   });

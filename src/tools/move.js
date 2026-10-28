@@ -2,6 +2,7 @@
 import { tool, call, text, json, z, guid, inCombat } from "../core.js";
 import { focus, wide, CLOSE, caption } from "../director.js";
 import { markUsed } from "../done.js";
+import { craftableNow } from "../craft.js";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -164,7 +165,15 @@ export async function useItem(a) {
       await sleep(Math.min(12, READ_SECONDS + body.length / 40) * 1000 * (READ_SECONDS > 0 ? 1 : 0));
       await wide();
       markUsed(started.guid);
-      return text(`${started.using} reads:\n${body}`);
+      // Recipe books teach a recipe as they are read; skill books teach a skill.
+      const acts = (await call("item_actions", { item: started.guid }).catch(() => ({ actions: [] }))).actions;
+      let note = "";
+      if (acts.includes("Recipe")) {
+        note = "\n\n[New recipe learned: dos2_craft lists it.]";
+        const now = await craftableNow().catch(() => null);
+        if (now) note += now;
+      } else if (acts.includes("SkillBook")) note = "\n\n[Skill book: if a new skill was learned, dos2_sheet shows it; dos2_memorise to use it.]";
+      return text(`${started.using} reads:\n${body}${note}`);
     }
     // Same for a loot window: show what is inside for a moment.
     if (s.opened && LOOT_SECONDS > 0) await sleep((a.quick ? Math.min(1, LOOT_SECONDS) : LOOT_SECONDS) * 1000);

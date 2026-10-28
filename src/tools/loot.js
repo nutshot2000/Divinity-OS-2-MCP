@@ -2,6 +2,7 @@
 import { tool, call, text, z, guid, inCombat } from "../core.js";
 import { showInventory, holdInventory, caption } from "../director.js";
 import { markUsed } from "../done.js";
+import { CRAFT_UI, client, readRecipe, listRecipes, craftableNow } from "../craft.js";
 
 const line = (i) => `  ${i.name}${i.amount > 1 ? ` x${i.amount}` : ""} [${i.guid}]` + (i.owned_by ? ` (owned by ${i.owned_by})` : "");
 
@@ -22,7 +23,8 @@ tool("dos2_loot", "List what is in a container the active character has opened a
     const r = await call("loot_take", { container: a.container, items: a.take === "all" ? undefined : a.take });
     if (a.take === "all") markUsed(a.container); // looted bodies and containers are done
     if (r.taken.length) await caption(`Took ${r.taken.slice(0, 3).map((i) => i.name + (i.amount > 1 ? ` x${i.amount}` : "")).join(", ")}${r.taken.length > 3 ? " and more" : ""}`);
-    return text(`${r.container}: took\n${r.taken.map(line).join("\n") || "  nothing"}` +
+    const can = r.taken.length ? await craftableNow().catch(() => null) : null;
+    return text(`${r.container}: took\n${r.taken.map(line).join("\n") || "  nothing"}` + (can ?? "") +
       (r.skipped_owned.length ? `\nleft (owned):\n${r.skipped_owned.map(line).join("\n")}` : ""));
   });
 
@@ -63,27 +65,9 @@ tool("dos2_trade", "Buy from a trader you are standing next to (talk to them fir
     }
     const r = await call("trade_buy", a);
     await caption(`Bought ${r.bought}${r.amount > 1 ? ` x${r.amount}` : ""} for ${r.price} gold`);
-    return text(`Bought ${r.bought}${r.amount > 1 ? ` x${r.amount}` : ""} from ${r.trader} for ${r.price} gold (${r.gold_left} left).`);
+    const can = await craftableNow().catch(() => null);
+    return text(`Bought ${r.bought}${r.amount > 1 ? ` x${r.amount}` : ""} from ${r.trader} for ${r.price} gold (${r.gold_left} left).` + (can ?? ""));
   });
-
-// Crafting goes through the game's own crafting screen (UI 102), as clicks would: selectRecipe(n) makes the screen show
-// recipe n (name, ingredients with counts, how many can be made), craftRecipe(n, amount) is what its Combine button sends.
-// Recorded from a hand-made Knife On A Stick (2026-10-28). The screen must exist: the player opens it once with K.
-const CRAFT_UI = 102;
-const client = (cmd, args = {}) => call(cmd, args, 15000, "client");
-
-async function readRecipe(id) {
-  const mark = (await client("ping")).log;
-  await client("ui_call", { ui: CRAFT_UI, fn: "selectRecipe", args: [id] });
-  await new Promise((res) => setTimeout(res, 300));
-  const es = (await client("ui_log", { ui: CRAFT_UI, since: mark, limit: 60 })).entries.filter((e) => e.when !== "After");
-  const name = es.find((e) => e.fn === "setRecipeResult");
-  if (!name) return null;
-  const max = es.find((e) => e.fn === "setRecipeMaxCraftAmount");
-  const ingredients = es.filter((e) => e.fn === "setIngredient" && e.args[2] !== "Select an ingredient")
-    .map((e) => `${e.args[2]} (${e.args[3]})`);
-  return { id, name: name.args[0], max: max ? Number(max.args[0]) : 0, ingredients };
-}
 
 tool("dos2_craft", "Craft through the game's crafting screen, as its buttons do. The screen must have been opened once " +
   "with K (it crafts for the character shown in it). Without recipe: lists the recipes the character knows, each with its " +

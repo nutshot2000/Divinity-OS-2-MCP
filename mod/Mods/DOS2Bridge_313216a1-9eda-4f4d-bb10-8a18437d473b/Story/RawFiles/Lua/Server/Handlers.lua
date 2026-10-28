@@ -441,6 +441,17 @@ function Handlers.identify(args)
   return { glass = NameOf(glass), identified = done }
 end
 
+--- An item's use actions from its template (Book, Recipe, SkillBook, Identify, Consume, ...).
+function Handlers.item_actions(args)
+  local it = GetItem(args.item)
+  if it == nil then return { actions = {} } end
+  local out = {}
+  pcall(function ()
+    for _, a in pairs((it.CurrentTemplate or it.RootTemplate).OnUsePeaceActions) do out[#out + 1] = tostring(a.Type) end
+  end)
+  return { actions = out }
+end
+
 --- What the party carries that still wants attention: things to read (books, notes, letters), skill books to learn,
 --- bags to open, and unidentified items. Found from each item's template use actions (Book, SkillBook, Recipe, ...).
 function Handlers.carried_todo()
