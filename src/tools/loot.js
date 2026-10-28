@@ -2,7 +2,7 @@
 import { tool, call, text, z, guid, inCombat } from "../core.js";
 import { showInventory, holdInventory, caption } from "../director.js";
 import { markUsed } from "../done.js";
-import { CRAFT_UI, client, readRecipe, listRecipes, craftableNow } from "../craft.js";
+import { CRAFT_UI, client, readRecipe, listRecipes, craftableNow, openCraft } from "../craft.js";
 
 const line = (i) => `  ${i.name}${i.amount > 1 ? ` x${i.amount}` : ""} [${i.guid}]` + (i.owned_by ? ` (owned by ${i.owned_by})` : "");
 
@@ -69,34 +69,33 @@ tool("dos2_trade", "Buy from a trader you are standing next to (talk to them fir
     return text(`Bought ${r.bought}${r.amount > 1 ? ` x${r.amount}` : ""} from ${r.trader} for ${r.price} gold (${r.gold_left} left).` + (can ?? ""));
   });
 
-tool("dos2_craft", "Craft through the game's crafting screen, as its buttons do. The screen must have been opened once " +
-  "with K (it crafts for the character shown in it). Without recipe: lists the recipes the character knows, each with its " +
-  "number, ingredients (how many you have) and how many you can make now. With recipe=<number> and optional amount: " +
-  "crafts it, if the screen says it can be made.",
+tool("dos2_craft", "Craft as the game's crafting window does: the bridge opens that window (it stays open for the " +
+  "watcher; close it in game with its X, never by script). It crafts for the acting character. Without recipe: lists the " +
+  "recipes the character knows, each with its number, ingredients (how many you carry) and how many you can make. With " +
+  "recipe=<number> and optional amount: crafts it, if the window says it can be made.",
   { recipe: z.number().int().min(0).max(80).optional(), amount: z.number().int().min(1).max(20).optional() },
   async (a) => {
     if (await inCombat()) return text("Not crafting: you are in combat.");
-    const noScreen = "The crafting screen is not available: press K in the game once (it stays usable after closing).";
+    const noScreen = "The game has no crafting screen right now (it was closed by script once, which destroys it): " +
+      "it comes back after a game restart. Crafting is the G key in game.";
     if (a.recipe == null) {
       const all = await listRecipes();
       if (all == null) return text(noScreen);
       const out = all.map((r) => `  ${r.id}. ${r.name}` + (r.ingredients.length ? `: ${r.ingredients.join(" + ")}` : "") +
         (r.max > 0 ? ` -> can make ${r.max}` : " (cannot make yet)"));
-      if (all.length && !all.some((r) => r.ingredients.length)) out.push("  (The crafting window is closed, so these counts may be out of date and nothing can be crafted: press K in the game, then list again.)");
       return text(`Known recipes (dos2_craft recipe=<number>):\n${out.join("\n") || "  none"}`);
     }
-    let r;
-    try { r = await readRecipe(a.recipe); } catch { return text(noScreen); }
+    if (!(await openCraft())) return text(noScreen);
+    const r = await readRecipe(a.recipe);
     if (!r) return text(`No recipe number ${a.recipe}: call dos2_craft without recipe for the list.`);
     const amount = a.amount ?? 1;
-    if (!r.ingredients.length) return text("Open the crafting window in the game first (K): the game only recounts " +
-      "ingredients and crafts while it is on screen. Then call dos2_craft again.");
-    if (r.max < amount) return text(`Cannot make ${amount} ${r.name}: the screen says ${r.max}` +
+    if (r.max < amount) return text(`Cannot make ${amount} ${r.name}: the window says ${r.max}` +
       (r.ingredients.length ? ` (needs ${r.ingredients.join(" + ")}).` : "."));
     await caption(`Crafting ${r.name}${amount > 1 ? ` x${amount}` : ""}`);
     await client("ui_call", { ui: CRAFT_UI, fn: "craftRecipe", args: [a.recipe, amount] });
     await new Promise((res) => setTimeout(res, 1500));
-    return text(`Crafted ${r.name}${amount > 1 ? ` x${amount}` : ""} (it is in the crafter's inventory; dos2_identify then dos2_inventory shows it).`);
+    return text(`Crafted ${r.name}${amount > 1 ? ` x${amount}` : ""} (in the crafter's inventory; dos2_identify, then dos2_inventory shows it). ` +
+      "The crafting window stays open for the watcher.");
   });
 
 tool("dos2_inventory", "Your character's inventory as the inventory screen shows it: name, amount, what is equipped, " +

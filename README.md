@@ -20,7 +20,8 @@ and plays blind (no story or puzzle knowledge from training data). See [PLAYBOOK
    `...\Divinity Original Sin 2\DefEd\bin`. The main menu then shows "Script Extender v60" in the corner.
 3. Get LSLib ([Norbyte/lslib releases](https://github.com/Norbyte/lslib/releases)) and unzip it into `tools/lslib`
    (so `tools/lslib/Packed/Tools/Divine.exe` exists), or set `DIVINE_EXE` to its `Divine.exe`.
-4. In this folder: `npm install`.
+4. In this folder: `npm install`, then `node scripts/build-recipes.mjs` (reads the game's recipe table for crafting
+   notes; pass the game folder if it is not `D:\SteamLibrary\steamapps\common\Divinity Original Sin 2`).
 5. **With the game closed**, install the mod: `powershell -File scripts/install-mod.ps1`
    (re-run this after every update – the running game locks the file).
 6. Start the game: main menu → **Mods** → tick **DOS2 Bridge** → Confirm (accept the achievements warning).

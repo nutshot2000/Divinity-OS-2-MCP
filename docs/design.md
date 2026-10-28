@@ -312,7 +312,14 @@ recorded fine without it open at the same time as a dialogue. Next try: read the
 - The crafting screen only recounts and crafts while it is on screen. Closed (hidden) it still answers selectRecipe
   with the name and the craftable amount from when it was last open, sends no ingredients, and `craftRecipe` does
   nothing (Shell + Long Branch in the pack, Improvised Staff not made). So `dos2_craft` and the "can craft now" notes
-  only work with the window open (K). Doing it without the screen would mean consuming ingredients and creating the
+  only work with the window open (G in game, or the story call OpenCraftUI). Doing it without the screen would mean consuming ingredients and creating the
   result from the recipe table (`ItemCombos.txt`, result stats -> `RootTemplate`).
 - Trader stock: a trader's goods are created when their trade window first opens (Doctor Leste carried nothing).
   `trade_list` calls `GenerateItems(player, trader)` once per trader per session, which filled her stock.
+- Opening crafting by script (2026-10-28): the story call `OpenCraftUI(character, item)` shows the crafting window
+  (the one anvils use); after `setCurrentTab(0)` the Recipes tab recounts, and `craftRecipe` made an Improvised Staff
+  from a Long Branch and a Shell. It only shows a crafting screen that exists: `closeUI` by script destroyed the screen
+  again, after which neither `OpenCraftUI` nor the G key brought it back until a restart. The bridge never closes it.
+- "Can craft now" notes count ingredients server-side (`craft_counts`) from data/recipes.json (built per machine by
+  `scripts/build-recipes.mjs` from the paks; it is game data, so not committed), limited to recipe names the crafting
+  window last listed for the character. Recipes needing a crafting station are left out.

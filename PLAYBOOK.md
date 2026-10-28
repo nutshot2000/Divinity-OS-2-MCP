@@ -225,6 +225,6 @@ The bridge cannot save. At milestones and before risky moments, ask the watching
 ## Crafting and trading
 
 - `dos2_craft` lists the recipes the character knows, with how many of each ingredient you carry; `dos2_craft recipe=N`
-  makes one. The crafting screen must have been opened once with K since loading.
+  makes one. The bridge opens the crafting window itself (G in game) and leaves it open; never close it by script.
 - Looting, sweeping, buying and reading recipe books end with "[Can craft now: ...]" when something has become makeable.
 - `dos2_trade trader=<GUID>` lists a trader's stock with prices (talk to them first); add `item=<GUID>` to buy.

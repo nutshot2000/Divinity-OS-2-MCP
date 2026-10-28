@@ -441,6 +441,78 @@ function Handlers.identify(args)
   return { glass = NameOf(glass), identified = done }
 end
 
+--- Open the crafting window for the acting character with the story's own command (anvils and cooking stations use
+--- it). It only shows a crafting screen that exists: closing that screen by script destroyed it (2026-10-28), so the
+--- bridge never closes it.
+function Handlers.open_craft()
+  local me = ActiveChar()
+  local items = me:GetInventoryItems() or {}
+  if #items == 0 then error("Nothing carried to open crafting with") end
+  Osi.OpenCraftUI(me.MyGuid, GetItem(items[1]).MyGuid)
+  return { crafter = NameOf(me) }
+end
+
+--- How many times each recipe could be made from what the acting character carries, from the game's recipe table
+--- (data/recipes.json, built by scripts/build-recipes.mjs). An ingredient is an item's stats id ("Object") or one of
+--- its ComboCategory values ("Category"); each ingredient uses one unit. Also gives each makeable recipe's name.
+local function comboCategories(it)
+  local ok, cat = pcall(function () return Ext.Stats.Get(it.StatsId).ComboCategory end)
+  local set = {}
+  if ok and type(cat) == "table" then for _, c in ipairs(cat) do set[c] = true end
+  elseif ok and type(cat) == "string" then for c in cat:gmatch("[^;,]+") do set[c] = true end end
+  return set
+end
+
+local function statsName(stats)
+  -- Potions and other objects keep their name in the localisation table under their stats id.
+  local okK, byKey = pcall(Ext.L10N.GetTranslatedStringFromKey, stats)
+  if okK and byKey and byKey ~= "" then return byKey end
+  local ok, st = pcall(Ext.Stats.Get, stats)
+  if ok and st then
+    local okT, rt = pcall(function () return st.RootTemplate end)
+    if okT and rt and rt ~= "" then
+      local t = Ext.Template.GetTemplate(rt)
+      local okN, n = pcall(function () return Ext.L10N.GetTranslatedString(t.DisplayName.Handle.Handle, "") end)
+      if okN and n and n ~= "" then return n end
+    end
+  end
+  return stats
+end
+
+function Handlers.craft_counts(args)
+  local me = ActiveChar()
+  local items = {}
+  for _, g in ipairs(me:GetInventoryItems() or {}) do
+    local it = GetItem(g)
+    if it then items[#items + 1] = { stats = it.StatsId, cats = comboCategories(it), amount = it.Amount or 1 } end
+  end
+  local function matches(item, ing)
+    if ing.type == "Category" then return item.cats[ing.object] == true end
+    return item.stats == ing.object
+  end
+  local out = {}
+  for _, combo in ipairs(args.recipes or {}) do
+    local left = {}
+    for i, it in ipairs(items) do left[i] = it.amount end
+    local made = 0
+    while made < 20 do
+      local used, ok = {}, true
+      for _, ing in ipairs(combo.ingredients) do
+        local found = false
+        for i, it in ipairs(items) do
+          if left[i] - (used[i] or 0) > 0 and matches(it, ing) then used[i] = (used[i] or 0) + 1; found = true; break end
+        end
+        if not found then ok = false; break end
+      end
+      if not ok then break end
+      for i, n in pairs(used) do left[i] = left[i] - n end
+      made = made + 1
+    end
+    if made > 0 then out[#out + 1] = { id = combo.id, count = made, name = combo.name or statsName(combo.result) } end
+  end
+  return { crafter = NameOf(me), makeable = out }
+end
+
 --- An item's use actions from its template (Book, Recipe, SkillBook, Identify, Consume, ...).
 function Handlers.item_actions(args)
   local it = GetItem(args.item)
