@@ -331,3 +331,8 @@ recorded fine without it open at the same time as a dialogue. Next try: read the
 - Party alerts: Beast died in poison after a fight while the bridge looted and changed gear, and no tool said so.
   `post` now returns `party_alerts` (dead; standing in fire, poison, lava, deathfog or electrified ground; poisoned,
   burning or bleeding; under 35% health) and every tool result ends with "[!! PARTY: ...]" until it is dealt with.
+- Camera vs selection (2026-10-28): the game camera follows the character the player has selected and pulls back to
+  it within about a second of any TargetLookAt change. `dos2_party select` only changes who the bridge acts as, so after
+  a reload (the game selected Beast) the camera followed Beast while the bridge walked Sebille. The portraits screen
+  (playerInfo.swf, UI 38) receives `selectPlayer(handle)`; calling its `charSel` with `Ext.UI.HandleToDouble(handle)`
+  did nothing. Open: how to change the game's selection from script. Until then the player clicks the portrait.
